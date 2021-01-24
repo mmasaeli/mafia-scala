@@ -1,13 +1,15 @@
 package org.masood.messenger.telegram.bot
 
-import akka.actor.{ActorSystem, PoisonPill, Props}
-import com.bot4s.telegram.models.User
-import org.masood.actor.GameActor
+import slogging.{LogLevel, LoggerConfig, PrintLoggerFactory}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object App {
+
+  LoggerConfig.factory = PrintLoggerFactory()
+  LoggerConfig.level = LogLevel.DEBUG
+
   def main(args: Array[String]): Unit = {
     runBot()
   }

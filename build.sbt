@@ -11,5 +11,6 @@ lazy val mafia = (project in file("."))
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % AkkaVersion
 libraryDependencies += "com.bot4s" %% "telegram-core" % "4.4.0-RC2"
 libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
+
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % Test
 libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % AkkaVersion % Test

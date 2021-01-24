@@ -6,8 +6,8 @@ import com.bot4s.telegram.api.RequestHandler
 import com.bot4s.telegram.api.declarative.Commands
 import com.bot4s.telegram.clients.ScalajHttpClient
 import com.bot4s.telegram.future.{Polling, TelegramBot}
+import org.masood.actor.ActorNotFoundException
 import org.masood.mafia.service.GameService
-import slogging.{LogLevel, LoggerConfig, PrintLoggerFactory}
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -17,10 +17,6 @@ import scala.util.Try
 class MafiaBot(val token: String) extends TelegramBot
   with Polling
   with Commands[Future] {
-
-  LoggerConfig.factory = PrintLoggerFactory()
-  // set log level, e.g. to TRACE
-  LoggerConfig.level = LogLevel.INFO
 
   val gameService: GameService = new GameService
 
@@ -45,9 +41,15 @@ class MafiaBot(val token: String) extends TelegramBot
       if (args.size != 1) {
         reply("Give me valid game id to join").void
       } else {
-        val res = Try(gameService.joinUser(args.head, msg.from.get))
-        if (res.isSuccess) reply(res.get).void
-        else reply(s"'${args.head}' is not a valid game id").void
+        Try(gameService.joinUser(args.head, msg.from.get)) match {
+          case res if (res.isSuccess) => reply(res.get).void
+          case x if (x.isFailure) => x.failed.get match {
+            case _: ActorNotFoundException => reply(s"'${args.head}' is not a valid game id").void
+            case ex =>
+              logger.error("Error in joining user", x)
+              reply("Sorry! Could not join the party for some unknown reason.").void
+          }
+        }
       }
     )
   }

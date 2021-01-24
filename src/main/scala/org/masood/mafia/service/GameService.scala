@@ -5,16 +5,17 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.bot4s.telegram.models.User
 import org.apache.commons.lang.RandomStringUtils
-import org.masood.actor.{ActorNotFoundException, GameActor}
 import org.masood.actor.WorldActions.AddIndividual
+import org.masood.actor.{ActorNotFoundException, GameActor}
 import org.masood.mafia.domain.GameStatus.GameStatus
 import org.masood.mafia.domain.Player.PlayerStatus
 import org.masood.mafia.domain.{GameStatus, MafiaGame, Player}
+import slogging.StrictLogging
 
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, MILLISECONDS}
 
-class GameService {
+class GameService extends StrictLogging {
 
   private val ctx: ActorSystem = ActorSystem("mafia")
   private val duration = Duration(700, MILLISECONDS)
@@ -23,12 +24,15 @@ class GameService {
   def newGame(god: User): String = {
     val random: String = RandomStringUtils.randomNumeric(6)
     ctx.actorOf(Props(new GameActor(god)), s"actor-$random")
+    logger.info(s"Created new game with ID '$random'.")
     random
   }
 
   def joinUser(gameId: String, user: User): String = {
     val actor = findActor(gameId)
-    Await.result(actor ? AddIndividual(user), duration).toString
+    val toR = Await.result(actor ? AddIndividual(user), duration).toString
+    logger.debug(s"gameId: $gameId, $toR")
+    toR
   }
 
   def state(game: MafiaGame): GameStatus = if (mafiaCount(game) >= cityCount(game)) GameStatus.Ended
