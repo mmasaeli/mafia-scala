@@ -3,7 +3,7 @@ package org.masood.actor
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.bot4s.telegram.models.User
-import org.masood.actor.World.AddIndividual
+import org.masood.actor.WorldActions.AddIndividual
 import org.scalatest.Matchers.convertToAnyShouldWrapper
 import org.scalatest.{BeforeAndAfterAll, FunSpecLike}
 

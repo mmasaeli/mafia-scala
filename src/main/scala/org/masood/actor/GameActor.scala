@@ -4,24 +4,26 @@ import akka.actor.Actor
 import com.bot4s.telegram.models.User
 import org.masood.mafia.domain.MafiaGame
 
-object World {
+object WorldActions {
 
-  sealed trait WorldMsg
+  sealed trait WorldAction
 
-  case class Sunrise(user: User) extends WorldMsg
+  case class create(user: User) extends WorldAction
 
-  case class Sunset(user: User) extends WorldMsg
+  case class Sunrise(user: User) extends WorldAction
 
-  case class AddIndividual(user: User) extends WorldMsg
+  case class Sunset(user: User) extends WorldAction
 
-  case class RandomizeChars(user: User) extends WorldMsg
+  case class AddIndividual(user: User) extends WorldAction
+
+  case class RandomizeChars(user: User) extends WorldAction
 
 }
 
-class GameActor(private val god: User) extends Actor {
+class GameActor(val god: User) extends Actor {
 
   import context._
-  import org.masood.actor.World._
+  import org.masood.actor.WorldActions._
 
   var people: Seq[User] = Seq()
   var gameTale: List[MafiaGame] = List()
