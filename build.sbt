@@ -8,10 +8,14 @@ lazy val mafia = (project in file("."))
     name := "Mafia"
   )
 
-libraryDependencies += "com.typesafe.akka" %% "akka-actor" % AkkaVersion
+//libraryDependencies += "com.typesafe.akka" %% "akka-actor" % AkkaVersion
 libraryDependencies += "com.bot4s" %% "telegram-core" % "4.4.0-RC2"
 libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
 //libraryDependencies += "org.telegram" % "telegrambots" % "5.0.1"
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % Test
-libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % AkkaVersion % Test
+libraryDependencies += "org.springframework.boot" % "spring-boot-starter-web" % "2.4.2"
+libraryDependencies += "org.springframework.boot" % "spring-boot-starter-data-redis" % "2.4.2"
+
+//libraryDependencies += "org.telegram" % "telegrambots-spring-boot-starter" % "5.0.1"
+//libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % Test
+//libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % AkkaVersion % Test

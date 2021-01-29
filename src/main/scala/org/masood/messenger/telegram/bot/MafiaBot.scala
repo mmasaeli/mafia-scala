@@ -6,21 +6,23 @@ import com.bot4s.telegram.api.RequestHandler
 import com.bot4s.telegram.api.declarative.Commands
 import com.bot4s.telegram.clients.ScalajHttpClient
 import com.bot4s.telegram.future.{Polling, TelegramBot}
-import com.bot4s.telegram.methods.{SendMessage, SendPoll}
+import com.bot4s.telegram.methods.SendMessage
 import com.bot4s.telegram.models.ChatId
-import org.masood.actor.ActorNotFoundException
+import org.masood.actor.GameNotFoundException
 import org.masood.mafia.service.GameService
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
 /** Generates random values.
  */
-class MafiaBot(val token: String) extends TelegramBot
+@Component
+class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
+               val gameService: GameService) extends TelegramBot
   with Polling
   with Commands[Future] {
-
-  val gameService: GameService = new GameService
 
   // Or just the scalaj-http backend
   override val client: RequestHandler[Future] = new ScalajHttpClient(token)
@@ -44,9 +46,9 @@ class MafiaBot(val token: String) extends TelegramBot
         reply("Give me valid game id to join").void
       } else {
         Try(gameService.joinUser(args.head, msg.from.get)) match {
-          case res if (res.isSuccess) => reply(res.get).void
+          case res if (res.isSuccess) => reply(res.get.toString).void
           case x if (x.isFailure) => x.failed.get match {
-            case _: ActorNotFoundException => reply(s"'${args.head}' is not a valid game id").void
+            case _: GameNotFoundException => reply(s"'${args.head}' is not a valid game id").void
             case ex =>
               logger.error("Error in joining user", x)
               reply("Sorry! Could not join the party for some unknown reason.").void
@@ -56,7 +58,7 @@ class MafiaBot(val token: String) extends TelegramBot
     )
   }
 
-  onCommand("randomize" | "rnd" | "rand")  { implicit msg =>
+  onCommand("randomize" | "rnd" | "rand") { implicit msg =>
     val f = request(SendMessage(ChatId(msg.chat.id), "How Many Mafia Players?"))
     f.onComplete {
       case Failure(e) => logger.error("Error in step #1 of randomization polling", e)
