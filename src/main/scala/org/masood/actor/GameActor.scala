@@ -16,7 +16,7 @@ object WorldActions {
 
   case class AddIndividual(user: User) extends WorldAction
 
-  case class RandomizeChars(user: User) extends WorldAction
+  case class AssignCharacters(character: Map[String, User]) extends WorldAction
 
 }
 
@@ -27,6 +27,7 @@ class GameActor(val god: User) extends Actor {
 
   var people: Seq[User] = Seq()
   var gameTale: List[MafiaGame] = List()
+  var charactersToAssign: Map[String, Int] = _
 
 
   override def receive: Receive = {
@@ -34,11 +35,8 @@ class GameActor(val god: User) extends Actor {
       people = people ++ Seq(user)
       sender() ! s"User '${user.firstName}' added. Population: ${people.size}"
     }
-    case RandomizeChars(user) => {
-      if (user.id == god.id) {
-        sender() ! s"Randomize done..."
-      }
-      else sender() ! "Only God can do that"
+    case AssignCharacters(characters) => {
+      sender() ! s"Randomize done..."
     }
     case Sunset => become(mafiaRecognitionNight)
   }

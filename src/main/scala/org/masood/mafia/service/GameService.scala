@@ -5,8 +5,8 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.bot4s.telegram.models.User
 import org.apache.commons.lang.RandomStringUtils
-import org.masood.actor.WorldActions.AddIndividual
-import org.masood.actor.{ActorNotFoundException, GameActor}
+import org.masood.actor.WorldActions.{AddIndividual, AssignCharacters}
+import org.masood.actor.{ActorNotFoundException, GameActor, NotAuthorizedException, TooManyArgumentsException}
 import org.masood.mafia.domain.GameStatus.GameStatus
 import org.masood.mafia.domain.Player.PlayerStatus
 import org.masood.mafia.domain.{GameStatus, MafiaGame, Player}
@@ -33,6 +33,16 @@ class GameService extends StrictLogging {
     val toR = Await.result(actor ? AddIndividual(user), duration).toString
     logger.debug(s"gameId: $gameId, $toR")
     toR
+  }
+
+  def randomize(gameId: String, user: User, characterCounts: Map[String, Int]) {
+    val actor = findActor(gameId).asInstanceOf[GameActor]
+    if (actor.god.id == user.id) {
+      if (characterCounts.values.sum > actor.people.size) throw TooManyArgumentsException(gameId)
+      val users: Seq[User] = actor.people.sortBy(_ => Math.random)
+      val charUsers: Map[String, User] = characterCounts.flatMap(pair => List.fill(pair._2)(pair._1)).zip(users).toMap
+      (actor.asInstanceOf[ActorRef] ! AssignCharacters(charUsers), duration).toString
+    } else throw NotAuthorizedException(gameId)
   }
 
   def state(game: MafiaGame): GameStatus = if (mafiaCount(game) >= cityCount(game)) GameStatus.Ended

@@ -6,11 +6,13 @@ import com.bot4s.telegram.api.RequestHandler
 import com.bot4s.telegram.api.declarative.Commands
 import com.bot4s.telegram.clients.ScalajHttpClient
 import com.bot4s.telegram.future.{Polling, TelegramBot}
+import com.bot4s.telegram.methods.{SendMessage, SendPoll}
+import com.bot4s.telegram.models.ChatId
 import org.masood.actor.ActorNotFoundException
 import org.masood.mafia.service.GameService
 
 import scala.concurrent.Future
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 /** Generates random values.
  */
@@ -52,6 +54,20 @@ class MafiaBot(val token: String) extends TelegramBot
         }
       }
     )
+  }
+
+  onCommand("randomize" | "rnd" | "rand")  { implicit msg =>
+    val f = request(SendMessage(ChatId(msg.chat.id), "How Many Mafia Players?"))
+    f.onComplete {
+      case Failure(e) => logger.error("Error in step #1 of randomization polling", e)
+      case _ => reply("AAAAAA")
+    }
+    for {
+      poll <- f
+    } yield {
+      reply(s"$poll sent")
+    }
+    f.void
   }
 
   // Int(n) extractor
