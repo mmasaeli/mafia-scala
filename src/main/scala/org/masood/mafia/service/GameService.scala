@@ -2,10 +2,9 @@ package org.masood.mafia.service
 
 import com.bot4s.telegram.models.User
 import org.apache.commons.lang.RandomStringUtils
-import org.masood.actor.{GameNotFoundException, NotAuthorizedException, TooManyArgumentsException}
 import org.masood.mafia.domain.GameStatus.{GameStatus, Invalid}
 import org.masood.mafia.domain.Player.PlayerStatus
-import org.masood.mafia.domain.{Game, GameStatus, MafiaGame, Player}
+import org.masood.mafia.domain._
 import org.masood.mafia.repository.GameRepository
 import org.springframework.stereotype.Service
 import slogging.StrictLogging
@@ -64,5 +63,4 @@ class GameService(gameRepository: GameRepository) extends StrictLogging {
   def cityCount(game: MafiaGame) = game.players
     .filter(p => !Player.isMafia(p.character))
     .count(_.status != PlayerStatus.Dead)
-
 }

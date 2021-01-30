@@ -1,4 +1,4 @@
-package org.masood.actor
+package org.masood.mafia.domain
 
 case class GameNotFoundException(val gameId: String) extends Exception
 

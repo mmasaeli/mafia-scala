@@ -1,4 +1,4 @@
-package org.masood.messenger.telegram.bot
+package org.masood.messenger.telegram
 
 import cats.instances.future._
 import cats.syntax.functor._
@@ -8,7 +8,7 @@ import com.bot4s.telegram.clients.ScalajHttpClient
 import com.bot4s.telegram.future.{Polling, TelegramBot}
 import com.bot4s.telegram.methods.SendMessage
 import com.bot4s.telegram.models.ChatId
-import org.masood.actor.GameNotFoundException
+import org.masood.mafia.domain.GameNotFoundException
 import org.masood.mafia.service.GameService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
