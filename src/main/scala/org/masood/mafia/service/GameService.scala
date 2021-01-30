@@ -5,12 +5,12 @@ import org.apache.commons.lang.RandomStringUtils
 import org.masood.mafia.domain.GameStatus.GameStatus
 import org.masood.mafia.domain.Player.PlayerStatus
 import org.masood.mafia.domain._
-import org.masood.mafia.repository.GameRepositoryImpl
+import org.masood.mafia.repository.GameRepository
 import org.springframework.stereotype.Service
 import slogging.StrictLogging
 
 @Service
-class GameService(gameRepository: GameRepositoryImpl) extends StrictLogging {
+class GameService(gameRepository: GameRepository) extends StrictLogging {
 
   def newGame(god: User): Game = {
     val random: String = RandomStringUtils.randomNumeric(6)
@@ -21,13 +21,13 @@ class GameService(gameRepository: GameRepositoryImpl) extends StrictLogging {
   }
 
   def joinUser(gameId: String, user: User): Game =
-    gameRepository.sFindById(gameId) match {
+    gameRepository.findById(gameId) match {
       case Some(game) => gameRepository.save(game.copy(individuals = game.individuals ++ List(user)))
       case _ => throw GameNotFoundException(gameId)
     }
 
   def randomize(randomizeRequest: RandomizeRequest, user: User): Game =
-    gameRepository.sFindById(randomizeRequest.gameId) match {
+    gameRepository.findById(randomizeRequest.gameId) match {
       case Some(game) =>
         if (game.gods.exists(_.id == user.id)) {
           if (randomizeRequest.characterCounts.values.sum > game.individuals.size) throw TooManyArgumentsException(randomizeRequest.gameId)
