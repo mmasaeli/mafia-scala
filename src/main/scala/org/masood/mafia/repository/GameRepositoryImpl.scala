@@ -1,27 +1,29 @@
 package org.masood.mafia.repository
 
-import org.masood.mafia.domain.Game
+import org.masood.mafia.domain.{Game, RandomizeRequest}
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Repository
 
-import java.lang
-import java.util.Optional
-import scala.collection.JavaConverters._
-
 
 @Repository
-class GameRepositoryImpl(val redisTemplate: RedisTemplate[String, Game]) extends GameRepository {
+class GameRepositoryImpl(val redisTemplate: RedisTemplate[String, Game]
+                         , val redisTemplateRR: RedisTemplate[String, RandomizeRequest]) {
 
   private val hashOperations = redisTemplate.opsForHash[String, Game]
+  private val hashOperationsRR = redisTemplateRR.opsForHash[String, RandomizeRequest]
 
-  override def save[S <: Game](game: S): S = {
+  def save(game: Game): Game = {
     hashOperations.put("GAME", game.id, game)
     game
   }
 
-  override def findAll = hashOperations.entries("GAME").values()
+  def saveRandomizeReq(randomizeRequest: RandomizeRequest) = {
+    hashOperationsRR.put("RAND_REQ", randomizeRequest.gameId, randomizeRequest)
+  }
 
-  def sFindById(id: String): Option[Game] = Some(hashOperations.get("GAME", id))
+  def findAll = hashOperations.entries("GAME").values()
+
+  def sFindById(id: String): Option[Game] = Option(hashOperations.get("GAME", id))
 
   def update(game: Game): Game = {
     save(game)
@@ -30,22 +32,4 @@ class GameRepositoryImpl(val redisTemplate: RedisTemplate[String, Game]) extends
   def delete(id: String): Unit = {
     hashOperations.delete("GAME", id)
   }
-
-  override def saveAll[S <: Game](entities: lang.Iterable[S]): lang.Iterable[S] = ???
-
-  override def findById(id: String): Optional[Game] = ???
-
-  override def existsById(id: String): Boolean = ???
-
-  override def findAllById(ids: lang.Iterable[String]): lang.Iterable[Game] = ???
-
-  override def count(): Long = ???
-
-  override def deleteById(id: String): Unit = ???
-
-  override def delete(game: Game): Unit = delete(game.id)
-
-  override def deleteAll(entities: lang.Iterable[_ <: Game]): Unit = ???
-
-  override def deleteAll(): Unit = ???
 }

@@ -63,6 +63,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     val f = request(SendMessage(ChatId(msg.chat.id), "How Many Mafia Players?"))
     f.onComplete {
       case Failure(e) => logger.error("Error in step #1 of randomization polling", e)
+      case rplMafia => reply(rplMafia.toString)
       case _ => reply("AAAAAA")
     }
     for {
@@ -71,6 +72,12 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       reply(s"$poll sent")
     }
     f.void
+  }
+
+  onCommand("all") { implicit msg =>
+    if (msg.from.get.id == 98257085) {
+      reply(gameService.listGames().toString).void
+    } else reply("/help to show all commands").void
   }
 
   // Int(n) extractor

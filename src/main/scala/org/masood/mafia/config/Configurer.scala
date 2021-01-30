@@ -1,6 +1,6 @@
 package org.masood.mafia.config
 
-import org.masood.mafia.domain.Game
+import org.masood.mafia.domain.{Game, RandomizeRequest}
 import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory
@@ -26,6 +26,13 @@ class Configurer {
   @Bean
   def redisTemplate: RedisTemplate[String, Game] = {
     val redisTemplate = new RedisTemplate[String, Game]
+    redisTemplate.setConnectionFactory(jedisConnectionFactory)
+    redisTemplate
+  }
+
+  @Bean
+  def redisTemplateRR: RedisTemplate[String, RandomizeRequest] = {
+    val redisTemplate = new RedisTemplate[String, RandomizeRequest]
     redisTemplate.setConnectionFactory(jedisConnectionFactory)
     redisTemplate
   }

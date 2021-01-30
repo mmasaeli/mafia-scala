@@ -26,21 +26,23 @@ class GameService(gameRepository: GameRepositoryImpl) extends StrictLogging {
       case _ => throw GameNotFoundException(gameId)
     }
 
-  def randomize(gameId: String, user: User, characterCounts: Map[String, Int]): Game =
-    gameRepository.sFindById(gameId) match {
+  def randomize(randomizeRequest: RandomizeRequest, user: User): Game =
+    gameRepository.sFindById(randomizeRequest.gameId) match {
       case Some(game) =>
         if (game.gods.exists(_.id == user.id)) {
-          if (characterCounts.values.sum > game.individuals.size) throw TooManyArgumentsException(gameId)
+          if (randomizeRequest.characterCounts.values.sum > game.individuals.size) throw TooManyArgumentsException(randomizeRequest.gameId)
           val users = game.individuals.sortBy(_ => Math.random)
-          val charUsers: Map[User, String] = characterCounts.flatMap(pair =>
+          val charUsers: Map[User, String] = randomizeRequest.characterCounts.flatMap(pair =>
             users.zip(List.fill(pair._2)(pair._1)))
           gameRepository.save(game.copy(people = charUsers))
         } else {
-          throw NotAuthorizedException(gameId)
+          throw NotAuthorizedException(randomizeRequest.gameId)
         }
-      case _ => throw GameNotFoundException(gameId)
+      case _ => throw GameNotFoundException(randomizeRequest.gameId)
     }
 
+
+  def listGames() = gameRepository.findAll
 
   def state(game: MafiaGame): GameStatus = if (mafiaCount(game) >= cityCount(game)) GameStatus.Ended
   else game.chainNumber match {
