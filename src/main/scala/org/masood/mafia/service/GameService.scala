@@ -2,19 +2,15 @@ package org.masood.mafia.service
 
 import com.bot4s.telegram.models.User
 import org.apache.commons.lang.RandomStringUtils
-import org.masood.mafia.domain.GameStatus.{GameStatus, Invalid}
+import org.masood.mafia.domain.GameStatus.GameStatus
 import org.masood.mafia.domain.Player.PlayerStatus
 import org.masood.mafia.domain._
-import org.masood.mafia.repository.GameRepository
+import org.masood.mafia.repository.GameRepositoryImpl
 import org.springframework.stereotype.Service
 import slogging.StrictLogging
 
-import scala.concurrent.duration.{Duration, MILLISECONDS}
-
 @Service
-class GameService(gameRepository: GameRepository) extends StrictLogging {
-
-  private val duration = Duration(700, MILLISECONDS)
+class GameService(gameRepository: GameRepositoryImpl) extends StrictLogging {
 
   def newGame(god: User): Game = {
     val random: String = RandomStringUtils.randomNumeric(6)
@@ -25,14 +21,14 @@ class GameService(gameRepository: GameRepository) extends StrictLogging {
   }
 
   def joinUser(gameId: String, user: User): Game =
-    gameRepository.findById(gameId).orElse(Game.InvalidGame) match {
-      case game if game.state != Invalid => gameRepository.save(game.copy(individuals = game.individuals ++ List(user)))
+    gameRepository.sFindById(gameId) match {
+      case Some(game) => gameRepository.save(game.copy(individuals = game.individuals ++ List(user)))
       case _ => throw GameNotFoundException(gameId)
     }
 
   def randomize(gameId: String, user: User, characterCounts: Map[String, Int]): Game =
-    gameRepository.findById(gameId).orElse(Game.InvalidGame) match {
-      case game if game.state != Invalid =>
+    gameRepository.sFindById(gameId) match {
+      case Some(game) =>
         if (game.gods.exists(_.id == user.id)) {
           if (characterCounts.values.sum > game.individuals.size) throw TooManyArgumentsException(gameId)
           val users = game.individuals.sortBy(_ => Math.random)

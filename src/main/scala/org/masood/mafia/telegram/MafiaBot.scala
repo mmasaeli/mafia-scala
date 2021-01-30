@@ -1,4 +1,4 @@
-package org.masood.messenger.telegram
+package org.masood.mafia.telegram
 
 import cats.instances.future._
 import cats.syntax.functor._
@@ -20,9 +20,10 @@ import scala.util.{Failure, Try}
  */
 @Component
 class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
-               val gameService: GameService) extends TelegramBot
-  with Polling
-  with Commands[Future] {
+               val gameService: GameService)
+  extends TelegramBot
+    with Polling
+    with Commands[Future] {
 
   // Or just the scalaj-http backend
   override val client: RequestHandler[Future] = new ScalajHttpClient(token)
