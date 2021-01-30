@@ -12,4 +12,6 @@ class RandomizeRequestRepository(val redisTemplate: RedisTemplate[String, Random
   def save(randomizeRequest: RandomizeRequest) = {
     hashOperations.put("RAND_REQ", randomizeRequest.gameId, randomizeRequest)
   }
+
+  def findById(id: String) = Option(hashOperations.get("RAND_REQ", id))
 }
