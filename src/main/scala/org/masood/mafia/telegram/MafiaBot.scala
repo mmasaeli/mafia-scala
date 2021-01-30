@@ -59,20 +59,25 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     )
   }
 
-  onCommand("randomize" | "rnd" | "rand") { implicit msg =>
-    val f = request(SendMessage(ChatId(msg.chat.id), "How Many Mafia Players?"))
-    f.onComplete {
-      case Failure(e) => logger.error("Error in step #1 of randomization polling", e)
-      case rplMafia => reply(rplMafia.toString)
-      case _ => reply("AAAAAA")
-    }
-    for {
-      poll <- f
-    } yield {
-      reply(s"$poll sent")
-    }
-    f.void
+  onCommand("charCount" | "char" | "c") { implicit msg =>
+    withArgs(args =>
+      if (args.size != 1) {
+        reply("Give me valid game id to initiate character combination count").void
+      } else {
+        Try(gameService.randomizeRequest(args.head, msg.from.get)) match {
+          case res if (res.isSuccess) => reply(
+            """Initiated now enter pairs of {'Character' 'Count'}(example: Mafia 3)
+              |Enter /rand to randomize
+              |""".stripMargin).void
+        }
+      }
+    )
   }
+//
+//  onMessage { implicit msg =>
+////    if(gameService)
+//    ???
+//  }
 
   onCommand("all") { implicit msg =>
     if (msg.from.get.id == 98257085) {

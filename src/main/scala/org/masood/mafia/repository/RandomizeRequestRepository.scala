@@ -10,7 +10,7 @@ class RandomizeRequestRepository(val redisTemplate: RedisTemplate[String, Random
   private val hashOperations = redisTemplate.opsForHash[String, RandomizeRequest]
 
   def save(randomizeRequest: RandomizeRequest) = {
-    hashOperations.put("RAND_REQ", randomizeRequest.gameId, randomizeRequest)
+    hashOperations.put("RAND_REQ", randomizeRequest.userId.toString, randomizeRequest)
   }
 
   def findById(id: String) = Option(hashOperations.get("RAND_REQ", id))

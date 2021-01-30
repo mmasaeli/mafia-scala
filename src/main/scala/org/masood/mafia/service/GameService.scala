@@ -5,12 +5,13 @@ import org.apache.commons.lang.RandomStringUtils
 import org.masood.mafia.domain.GameStatus.GameStatus
 import org.masood.mafia.domain.Player.PlayerStatus
 import org.masood.mafia.domain._
-import org.masood.mafia.repository.GameRepository
+import org.masood.mafia.repository.{GameRepository, RandomizeRequestRepository}
 import org.springframework.stereotype.Service
 import slogging.StrictLogging
 
 @Service
-class GameService(gameRepository: GameRepository) extends StrictLogging {
+class GameService(val gameRepository: GameRepository,
+                  val randomizeRequestRepository: RandomizeRequestRepository) extends StrictLogging {
 
   def newGame(god: User): Game = {
     val random: String = RandomStringUtils.randomNumeric(6)
@@ -24,6 +25,24 @@ class GameService(gameRepository: GameRepository) extends StrictLogging {
     gameRepository.findById(gameId) match {
       case Some(game) => gameRepository.save(game.copy(individuals = game.individuals ++ List(user)))
       case _ => throw GameNotFoundException(gameId)
+    }
+
+  def randomizeRequest(gameId: String, user: User) =
+    gameRepository.findById(gameId) match {
+      case Some(game) => randomizeRequestRepository.save(RandomizeRequest(gameId, user.id, Map.empty[String, Int]))
+      case _ => throw GameNotFoundException(gameId)
+    }
+
+  def randomizing(user: User): RandomizeRequest =
+    randomizeRequestRepository.findById(user.id.toString) match {
+      case Some(rr) => rr
+      case _ => throw GameNotFoundException(user.id.toString)
+    }
+
+  def randomizeRequest(randomizeRequest: RandomizeRequest, newChar: String, count: Int, user: User) =
+    randomizeRequestRepository.findById(user.id.toString) match {
+      case Some(rr) => randomizeRequestRepository.save(rr.copy(characterCounts = rr.characterCounts ++ Map(newChar -> count)))
+      case _ => throw GameNotFoundException(randomizeRequest.gameId)
     }
 
   def randomize(randomizeRequest: RandomizeRequest, user: User): Game =
