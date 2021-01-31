@@ -13,6 +13,6 @@ class SessionService(val sessionRepository: SessionRepository) {
     case _ => Session(userId = user.id, status = "EMPTY")
   }
 
-  def saveSession(session: Session)(implicit user: User) = ???
+  def saveSession(session: Session) = sessionRepository.save(session)
 
 }

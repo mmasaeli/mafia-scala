@@ -45,6 +45,10 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     }
   }
 
+  onCommand("session") { implicit msg =>
+    reply(getSession.toString).void
+  }
+
   onCommand("new") { implicit msg =>
     val session = getSession
     session.status match {
@@ -107,11 +111,6 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       if (msg.from.get.id == 98257085) {
         reply(gameService.listGames().toString).void
       } else reply("/help to show all commands").void
-  }
-
-  // Int(n) extractor
-  object Int {
-    def unapply(s: String): Option[Int] = Try(s.toInt).toOption
   }
 
 }
