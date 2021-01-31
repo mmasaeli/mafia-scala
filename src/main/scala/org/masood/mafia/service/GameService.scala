@@ -2,8 +2,6 @@ package org.masood.mafia.service
 
 import com.bot4s.telegram.models.User
 import org.apache.commons.lang.RandomStringUtils
-import org.masood.mafia.domain.GameStatus.GameStatus
-import org.masood.mafia.domain.Player.PlayerStatus
 import org.masood.mafia.domain._
 import org.masood.mafia.repository.{GameRepository, RandomizeRequestRepository}
 import org.springframework.stereotype.Service
@@ -56,24 +54,5 @@ class GameService(val gameRepository: GameRepository,
       case _ => throw GameNotFoundException(randomizeRequest.gameId)
     }
 
-
   def listGames() = gameRepository.findAll
-
-  def state(game: MafiaGame): GameStatus = if (mafiaCount(game) >= cityCount(game)) GameStatus.Ended
-  else game.chainNumber match {
-    case 0 => GameStatus.New
-    case 1 => GameStatus.MafiaRecognitionNight
-    case x if (x % 2 == 0) => GameStatus.Day
-    case _ => GameStatus.Night
-  }
-
-  def aliveCount(game: MafiaGame) = game.players.count(_.status != PlayerStatus.Dead)
-
-  def mafiaCount(game: MafiaGame) = game.players
-    .filter(p => Player.isMafia(p.character))
-    .count(_.status != PlayerStatus.Dead)
-
-  def cityCount(game: MafiaGame) = game.players
-    .filter(p => !Player.isMafia(p.character))
-    .count(_.status != PlayerStatus.Dead)
 }

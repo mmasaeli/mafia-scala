@@ -4,6 +4,7 @@ import org.masood.mafia.domain.Game
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Repository
 
+import scala.collection.JavaConverters._
 
 @Repository
 class GameRepository(val redisTemplate: RedisTemplate[String, Game]) {
@@ -15,7 +16,7 @@ class GameRepository(val redisTemplate: RedisTemplate[String, Game]) {
     game
   }
 
-  def findAll = hashOperations.entries("GAME").values()
+  def findAll = hashOperations.entries("GAME").values().asScala
 
   def findById(id: String): Option[Game] = Option(hashOperations.get("GAME", id))
 

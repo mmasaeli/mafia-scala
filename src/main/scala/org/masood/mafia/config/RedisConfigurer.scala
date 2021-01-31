@@ -1,18 +1,13 @@
 package org.masood.mafia.config
 
-import org.masood.mafia.domain.{Game, RandomizeRequest}
+import org.masood.mafia.domain.{Game, RandomizeRequest, Session}
 import org.springframework.context.annotation.{Bean, Configuration}
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory
 
-@Configuration
-class RedisConfigurer {
 
-  //  @Bean def redisConnectionFactory = new LettuceConnectionFactory(new RedisStandaloneConfiguration("localhost", 6379))
-  //
-  //  import org.springframework.context.annotation.Bean
-  //  import org.springframework.data.redis.connection.RedisStandaloneConfiguration
-  //  import org.springframework.data.redis.connection.jedis.JedisConnectionFactory
+@Configuration
+class RedisConfig {
 
   @Bean
   def jedisConnectionFactory: JedisConnectionFactory = {
@@ -31,8 +26,15 @@ class RedisConfigurer {
   }
 
   @Bean
-  def randomizeReqTemplate: RedisTemplate[String, RandomizeRequest] = {
+  def randomizeReqSession: RedisTemplate[String, RandomizeRequest] = {
     val redisTemplate = new RedisTemplate[String, RandomizeRequest]
+    redisTemplate.setConnectionFactory(jedisConnectionFactory)
+    redisTemplate
+  }
+
+  @Bean
+  def sessionTemplate: RedisTemplate[String, Session] = {
+    val redisTemplate = new RedisTemplate[String, Session]
     redisTemplate.setConnectionFactory(jedisConnectionFactory)
     redisTemplate
   }

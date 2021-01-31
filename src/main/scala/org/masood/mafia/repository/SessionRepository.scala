@@ -1,5 +1,6 @@
 package org.masood.mafia.repository
 
+import org.masood.mafia.domain.Session
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Repository
 
