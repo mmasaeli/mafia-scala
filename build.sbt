@@ -6,7 +6,8 @@ lazy val mafia = (project in file("."))
     name := "Mafia"
   )
 
-libraryDependencies += "com.bot4s" %% "telegram-core" % "4.4.0-RC2"
+//libraryDependencies += "com.bot4s" %% "telegram-core" % "4.4.0-RC2"
+libraryDependencies += "info.mukel" %% "telegrambot4s" % "3.0.14"
 libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
 
 libraryDependencies += "org.springframework.boot" % "spring-boot-starter-web" % "2.4.2"

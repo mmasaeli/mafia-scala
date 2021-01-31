@@ -1,6 +1,6 @@
 package org.masood.mafia.domain
 
-import com.bot4s.telegram.models.User
+import info.mukel.telegrambot4s.models.User
 import org.masood.mafia.domain.Player.PlayerStatus.PlayerStatus
 
 object Player {

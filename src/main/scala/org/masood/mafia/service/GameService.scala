@@ -1,17 +1,18 @@
 package org.masood.mafia.service
 
-import com.bot4s.telegram.models.User
+//import com.bot4s.telegram.models.User
+import com.typesafe.scalalogging.StrictLogging
+import info.mukel.telegrambot4s.models.User
 import org.apache.commons.lang.RandomStringUtils
 import org.masood.mafia.domain._
 import org.masood.mafia.repository.{GameRepository, RandomizeRequestRepository}
 import org.springframework.stereotype.Service
-import slogging.StrictLogging
 
 @Service
 class GameService(val gameRepository: GameRepository,
                   val randomizeRequestRepository: RandomizeRequestRepository) extends StrictLogging {
 
-  def newGame(god: User): Game = {
+  def newGame(implicit god: User): Game = {
     val random: String = RandomStringUtils.randomNumeric(6)
     val game = Game(random, List(god), List(), Map(), GameStatus.New)
     gameRepository.save(game)
