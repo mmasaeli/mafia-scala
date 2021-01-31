@@ -8,9 +8,11 @@ import org.springframework.stereotype.Service
 @Service
 class SessionService(val sessionRepository: SessionRepository) {
 
-  def getSession(user: User): Session = sessionRepository.findById(user.id) match {
+  def getSession(implicit user: User): Session = sessionRepository.findById(user.id) match {
     case Some(session) => session
     case _ => Session(userId = user.id, status = "EMPTY")
   }
+
+  def saveSession(session: Session)(implicit user: User) = ???
 
 }

@@ -6,7 +6,6 @@ import java.io.{Serializable => JSerializable}
 
 @RedisHash("Session")
 case class Session(userId: Int,
-                   //                   chatId: Int,
                    status: String,
-                   metadata: String = ""
+                   metadata: Map[String, Any] = _
                   ) extends JSerializable
