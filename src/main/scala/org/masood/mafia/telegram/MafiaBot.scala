@@ -6,15 +6,13 @@ import com.bot4s.telegram.api.RequestHandler
 import com.bot4s.telegram.api.declarative.Commands
 import com.bot4s.telegram.clients.ScalajHttpClient
 import com.bot4s.telegram.future.{Polling, TelegramBot}
-import com.bot4s.telegram.methods.SendMessage
-import com.bot4s.telegram.models.ChatId
 import org.masood.mafia.domain.GameNotFoundException
 import org.masood.mafia.service.GameService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
 import scala.concurrent.Future
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 /** Generates random values.
  */
@@ -73,11 +71,21 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       }
     )
   }
-//
-//  onMessage { implicit msg =>
-////    if(gameService)
-//    ???
-//  }
+
+  onCommand("rand" | "r") { implicit msg =>
+    gameService.randomizing(msg.from.get) match {
+      case Some(rr) => reply(gameService.randomize(rr, msg.from.get).toString).void
+    }
+  }
+
+  onMessage { implicit msg =>
+    gameService.randomizing(msg.from.get) match {
+      case Some(rr) =>
+        val splt = msg.text.get.strip().split("\\s+")
+        gameService.randomizeRequest(rr, splt.head, splt(1).toInt, msg.from.get)
+        reply("").void
+    }
+  }
 
   onCommand("all") { implicit msg =>
     if (msg.from.get.id == 98257085) {

@@ -33,11 +33,7 @@ class GameService(val gameRepository: GameRepository,
       case _ => throw GameNotFoundException(gameId)
     }
 
-  def randomizing(user: User): RandomizeRequest =
-    randomizeRequestRepository.findById(user.id.toString) match {
-      case Some(rr) => rr
-      case _ => throw GameNotFoundException(user.id.toString)
-    }
+  def randomizing(user: User) = randomizeRequestRepository.findById(user.id.toString)
 
   def randomizeRequest(randomizeRequest: RandomizeRequest, newChar: String, count: Int, user: User) =
     randomizeRequestRepository.findById(user.id.toString) match {
