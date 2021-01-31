@@ -47,9 +47,12 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   onCommand("new") { implicit msg =>
     val session = getSession
-    val id = gameService.newGame(msg.from.get).id
-    sessionService.saveSession(session.copy(status = "NEW", metadata = Map("gameId" -> id)))
-    reply(s"A new game has been initialized. ID: '$id'").void
+    session.status match {
+      case _ =>
+        val id = gameService.newGame(msg.from.get).id
+        sessionService.saveSession(session.copy(status = "NEW", metadata = Map("gameId" -> id)))
+        reply(s"A new game has been initialized. ID: '$id'").void
+    }
   }
 
   onCommand("join" | "j") {
@@ -88,21 +91,14 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
         }
       )
   }
-
-  onCommand("rand" | "r") {
-    implicit msg =>
-      gameService.randomizing(msg.from.get) match {
-        case Some(rr) => reply(gameService.randomize(rr, msg.from.get).toString).void
-      }
-  }
-
   onMessage {
     implicit msg =>
       gameService.randomizing(msg.from.get) match {
         case Some(rr) =>
-          val splt = msg.text.get.strip().split("\\s+")
-          gameService.randomizeRequest(rr, splt.head, splt(1).toInt, msg.from.get)
+          val splitted = msg.text.get.strip().split("\\s+")
+          gameService.randomizeRequest(rr, splitted.head, splitted(1).toInt, msg.from.get)
           reply("").void
+        case _ => reply("").void
       }
   }
 
