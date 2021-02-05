@@ -1,7 +1,5 @@
 package org.masood.mafia.service
 
-//import com.bot4s.telegram.models.User
-
 import com.typesafe.scalalogging.StrictLogging
 import info.mukel.telegrambot4s.models.User
 import org.apache.commons.lang.RandomStringUtils
