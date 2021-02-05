@@ -6,7 +6,7 @@ import org.masood.mafia.repository.SessionRepository
 import org.springframework.stereotype.Service
 
 @Service
-class SessionService(val sessionRepository: SessionRepository) {
+class SessionService(private val sessionRepository: SessionRepository) {
 
   def getSession(implicit user: User): Session = sessionRepository.findById(user.id) match {
     case Some(session) => session

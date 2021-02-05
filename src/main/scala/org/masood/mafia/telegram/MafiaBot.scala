@@ -24,13 +24,6 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   def getSession(implicit msg: Message): Session = sessionService.getSession
 
-  private def forgetGame(gameId: String): InlineKeyboardMarkup = {
-    InlineKeyboardMarkup.singleButton(
-      InlineKeyboardButton.callbackData(
-        s"Forget this Game!\n",
-        prefixTag("GAME")(gameId)))
-  }
-
   onCommand("help") { implicit msg =>
     getSession.status match {
       case "ASSIGN" => reply("ASSIGNING")
@@ -49,16 +42,13 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     reply(getSession.toString)
   }
 
-  def newGame(session: Session)(implicit msg: Message) = {
-    val id = gameService.newGame.id
-    sessionService.saveSession(session.copy(status = "NEW", metadata = Map("gameId" -> id)))
-    reply(s"A new game has been initialized. ID: '$id'")
-  }
-
   onCommand("new") { implicit msg =>
     val session = getSession
     session.status match {
-      case "EMPTY" => newGame(session)
+      case "EMPTY" =>
+        val id = gameService.newGame.id
+        sessionService.saveSession(session.copy(status = "NEW", metadata = Map("gameId" -> id)))
+        reply(s"A new game has been initialized. ID: '$id'")
       case _ =>
         reply(s"You are in the middle of game ${session.metadata("gameId")}",
           replyMarkup = Some(forgetGame(session.metadata("gameId").toString)))
@@ -85,35 +75,41 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     )
   }
 
-  onCallbackWithTag("GAME") { implicit cbq => // listens on all callbacks that START with TAG
-    // Notification only shown to the user who pressed the button.
-    ackCallback(Some(cbq.from.firstName + " pressed the button!"))
-    // Or just ackCallback() - this is needed by Telegram!
+  private def forgetGame(gameId: String): InlineKeyboardMarkup = {
+    InlineKeyboardMarkup.singleButton(
+      InlineKeyboardButton.callbackData(
+        s"Forget this Game!\n",
+        prefixTag("FORGET_GAME")(gameId)))
+  }
 
+  onCallbackWithTag("FORGET_GAME") { implicit cbq =>
     for {
-      data <- cbq.data //the data is the callback identifier without the TAG (the count in our case)
+      data <- cbq.data
       msg <- cbq.message
-    } /* do */ {
+    } {
+      gameService.disconnect(data)(msg.from.get)
+      val session = getSession(msg)
+      sessionService.saveSession(session.copy(
+        status = "EMPTY",
+        metadata = session.metadata.filter(it => it._1 == "gameId" && it._2 == data)))
       reply(s"Forgot game $data.")(msg)
     }
   }
 
-  //
-  //  onCommand("charCount" | "char" | "c") { implicit msg =>
-  //    withArgs(args =>
-  //      if (args.size != 1) {
-  //        reply("Give me valid game id to initiate character combination count")
-  //      } else {
-  //        Try(gameService.randomizeRequest(args.head, msg.from.get)) match {
-  //          case res if (res.isSuccess) => reply(
-  //            """Initiated now enter pairs of {'Character' 'Count'}(example: Mafia 3)
-  //              |Enter /rand to randomize
-  //              |""".stripMargin)
-  //        }
-  //      }
-  //    )
-  //  }
-  //
+  onCommand("cc") { implicit msg =>
+    withArgs(args =>
+      if (args.size != 1) {
+        reply("Give me valid game id to initiate character combination count")
+      } else {
+        Try(gameService.randomizeRequest(args.head, msg.from.get)) match {
+          case res if (res.isSuccess) => reply(
+            """Initiated now enter pairs of {'Character' 'Count'}(example: Mafia 3)
+              |Enter /rand to randomize
+              |""".stripMargin)
+        }
+      }
+    )
+  }
 
   onCommand("all") { implicit msg =>
     if (msg.from.get.id == 98257085) {

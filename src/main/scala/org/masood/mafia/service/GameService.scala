@@ -1,6 +1,7 @@
 package org.masood.mafia.service
 
 //import com.bot4s.telegram.models.User
+
 import com.typesafe.scalalogging.StrictLogging
 import info.mukel.telegrambot4s.models.User
 import org.apache.commons.lang.RandomStringUtils
@@ -9,8 +10,8 @@ import org.masood.mafia.repository.{GameRepository, RandomizeRequestRepository}
 import org.springframework.stereotype.Service
 
 @Service
-class GameService(val gameRepository: GameRepository,
-                  val randomizeRequestRepository: RandomizeRequestRepository) extends StrictLogging {
+class GameService(private val gameRepository: GameRepository,
+                  private val randomizeRequestRepository: RandomizeRequestRepository) extends StrictLogging {
 
   def newGame(implicit god: User): Game = {
     val random: String = RandomStringUtils.randomNumeric(6)
@@ -19,6 +20,17 @@ class GameService(val gameRepository: GameRepository,
     logger.info(s"Created new game with ID '$random'.")
     game
   }
+
+  def disconnect(gameId: String)(implicit user: User): Game =
+    gameRepository.findById(gameId) match {
+      case Some(game) =>
+        gameRepository.save(
+          game.copy(
+            individuals = game.individuals.filter(_.id == user.id),
+            gods = game.gods.filter(_.id == user.id))
+        )
+      case _ => throw GameNotFoundException(gameId)
+    }
 
   def joinUser(gameId: String, user: User): Game =
     gameRepository.findById(gameId) match {
