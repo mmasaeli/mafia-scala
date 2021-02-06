@@ -80,14 +80,6 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     )
   }
 
-  onCommand("cc") { implicit msg =>
-    withArgs(args =>
-      reply(s"numbers",
-        replyMarkup = Some(count(Map(("Mafia", 0), ("God father", 0), ("Doctor", 0), ("Armour", 0))))
-      )
-    )
-  }
-
   onCommand("all") { implicit msg =>
     if (msg.from.get.id == 98257085) {
       reply(gameService.listGames().toString)
@@ -101,7 +93,17 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
         prefixTag("FORGET_GAME")(gameId)))
   }
 
-  private def count(chars: Map[String, Int]): InlineKeyboardMarkup = {
+  onCommand("cc") { implicit msg =>
+    withArgs(args =>
+      reply(s"numbers",
+        replyMarkup = Some(count(
+          Map(("Mafia", 0), ("God father", 0), ("Doctor", 0), ("Armour", 0))
+            ++ args.map { it => (it, 0) }.toMap, page = 0))
+      )
+    )
+  }
+
+  private def count(chars: Map[String, Int], page: Int): InlineKeyboardMarkup = {
     InlineKeyboardMarkup.singleColumn(
       chars.map { char: (String, Int) =>
         val charToBe: Map[String, Int] = chars ++ Map((char._1, char._2 + 1))
@@ -114,19 +116,18 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   }
 
   onCallbackWithTag("COUNT_CHARS") { implicit cbq =>
-    ackCallback(Some(cbq.from.firstName + " pressed the button!"))
     for {
       data <- cbq.data
       msg <- cbq.message
     } {
       val mapper = new ObjectMapper() with ScalaObjectMapper
       mapper.registerModule(DefaultScalaModule)
-      val chars = mapper.readValue[Map[String, Int]](data)
+      val (chars, page) = mapper.readValue[(Map[String, Int], Int)](data)
       request(
         EditMessageReplyMarkup(
           Some(ChatId(msg.source)),
           Some(msg.messageId),
-          replyMarkup = Some(count(chars)))
+          replyMarkup = Some(count(chars, page)))
       )
     }
   }
