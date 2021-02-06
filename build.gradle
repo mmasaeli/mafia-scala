@@ -20,7 +20,7 @@ dependencies {
     implementation "org.scala-lang:scala-library:${scalaVersion}.10"
     implementation group: 'info.mukel', name: 'telegrambot4s_2.12', version: '3.0.15'
     implementation "commons-lang:commons-lang:2.6"
-    implementation "org.springframework.boot:spring-boot-starter-web"
+    implementation "org.springframework.boot:spring-boot-starter"
     implementation "org.springframework.boot:spring-boot-configuration-processor"
     implementation "org.springframework.data:spring-data-redis"
     implementation "redis.clients:jedis"
