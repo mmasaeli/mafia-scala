@@ -24,7 +24,7 @@ case class Game(id: String,
     }.mkString(", ")
   }}. Players: {${
     people.map { it =>
-      (it._1.firstName, it._2)
+      s"'${it._1.firstName}(${it._1.username.getOrElse("")})' ${if (it._2 == "") "" else " -> '${it._2}'"}"
     }.mkString(", ")
   }}"
 }

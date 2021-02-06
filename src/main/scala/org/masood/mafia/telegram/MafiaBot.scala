@@ -9,6 +9,7 @@ import org.masood.mafia.service.{GameService, SessionService}
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
+import scala.concurrent.Future
 import scala.util.Try
 
 /** Generates random values.
@@ -48,7 +49,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     session.status match {
       case "EMPTY" =>
         val id = gameService.newGame.id
-        sessionService.saveSession(session.copy(status = "NEW", gameId = id))
+        sessionService.saveSession(session.copy(status = "New", gameId = id))
         reply(s"A new game has been initialized. ID: '$id'")
       case _ =>
         reply(s"You are in the middle of game ${session.gameId}",
@@ -56,20 +57,44 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     }
   }
 
+  private def chooseGame(tag: String): ReplyMarkup = {
+    InlineKeyboardMarkup.singleColumn(
+      gameService.listGames().filterNot(_.state == "New").map { game =>
+        InlineKeyboardButton.callbackData(
+          game.summary(),
+          prefixTag(tag)(game.id)
+        )
+      }.toSeq
+    )
+  }
+
+  private def joinGame(gameId: String, user: User)(implicit msg: Message): Future[Message] =
+    Try(gameService.joinUser(gameId, user)) match {
+      case res if res.isSuccess => reply(res.get.toString)
+      case x if x.isFailure => x.failed.get match {
+        case _: GameNotFoundException => reply(s"'$gameId' is not a valid game id")
+        case ex =>
+          logger.error("Error in joining user", x)
+          reply("Sorry! Could not join the party for some unknown reason.")
+      }
+    }
+
+  onCallbackWithTag("JOIN_GAME") { implicit cbq =>
+    for {
+      data <- cbq.data
+      msg <- cbq.message
+    } {
+      joinGame(data, User(msg.chat.id.toInt, firstName = msg.chat.firstName.get, lastName = msg.chat.lastName, username = msg.chat.username, languageCode = None, isBot = false))(msg)
+    }
+  }
+
   onCommand("join") { implicit msg =>
     withArgs(args =>
       if (args.size != 1) {
-        reply("Give me valid game id to join")
+        reply(s"Select or enter a game.",
+          replyMarkup = Some(chooseGame("JOIN_GAME")))
       } else {
-        Try(gameService.joinUser(args.head, msg.from.get)) match {
-          case res if (res.isSuccess) => reply(res.get.toString)
-          case x if (x.isFailure) => x.failed.get match {
-            case _: GameNotFoundException => reply(s"'${args.head}' is not a valid game id")
-            case ex =>
-              logger.error("Error in joining user", x)
-              reply("Sorry! Could not join the party for some unknown reason.")
-          }
-        }
+        joinGame(args.head, msg.from.get)
       }
     )
   }
@@ -78,7 +103,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     withArgs(args =>
       if (msg.from.get.id == 98257085) {
         reply(gameService.listGames().map { game =>
-          if(args.nonEmpty && args.head == "detailed") game.toString else game.summary()
+          if (args.nonEmpty && args.head == "detailed") game.toString else game.summary()
         }.mkString("\n"))
       } else reply("/help to show all commands")
     )
