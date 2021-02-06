@@ -1,0 +1,56 @@
+plugins {
+    id 'org.springframework.boot' version '2.4.2'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'scala'
+    id 'idea'
+    id 'java'
+}
+
+group = 'org.masood.telegram'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+compileScala.targetCompatibility = 1.8
+def scalaVersion = '2.12'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.scala-lang:scala-library:${scalaVersion}.10"
+    implementation group: 'info.mukel', name: 'telegrambot4s_2.12', version: '3.0.15'
+    implementation "commons-lang:commons-lang:2.6"
+    implementation "org.springframework.boot:spring-boot-starter-web"
+    implementation "org.springframework.boot:spring-boot-configuration-processor"
+    implementation "org.springframework.data:spring-data-redis"
+    implementation "redis.clients:jedis"
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation "org.scalatest:scalatest_${scalaVersion}:3.2.3"
+    testImplementation group: 'org.scalatest', name: "scalatest-mustmatchers_${scalaVersion}", version: '3.2.3'
+    testImplementation "org.scalatestplus:junit-4-12_${scalaVersion}:3.2.2.0"
+    testRuntimeOnly "org.scala-lang.modules:scala-xml_${scalaVersion}:1.2.0"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+sourceSets {
+    main {
+        scala {
+            srcDirs = ['src/main/scala']
+        }
+        java {
+            srcDirs = ['src/main/java']
+        }
+    }
+    test {
+        scala {
+            srcDirs = ['src/test/scala']
+        }
+        java {
+            srcDirs = ['src/test/java']
+        }
+    }
+}
