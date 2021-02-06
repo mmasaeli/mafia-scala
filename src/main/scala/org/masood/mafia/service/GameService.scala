@@ -4,12 +4,11 @@ import com.typesafe.scalalogging.StrictLogging
 import info.mukel.telegrambot4s.models.User
 import org.apache.commons.lang.RandomStringUtils
 import org.masood.mafia.domain._
-import org.masood.mafia.repository.{GameRepository, RandomizeRequestRepository}
+import org.masood.mafia.repository.GameRepository
 import org.springframework.stereotype.Service
 
 @Service
-class GameService(private val gameRepository: GameRepository,
-                  private val randomizeRequestRepository: RandomizeRequestRepository) extends StrictLogging {
+class GameService(private val gameRepository: GameRepository) extends StrictLogging {
 
   def newGame(implicit god: User): Game = {
     val random: String = RandomStringUtils.randomNumeric(6)
@@ -36,33 +35,19 @@ class GameService(private val gameRepository: GameRepository,
       case _ => throw GameNotFoundException(gameId)
     }
 
-  def randomizeRequest(gameId: String, user: User) =
+  def randomize(gameId: String, characterCounts: Map[String, Int])(implicit user: User): Game =
     gameRepository.findById(gameId) match {
-      case Some(game) => randomizeRequestRepository.save(RandomizeRequest(gameId, user.id, Map.empty[String, Int]))
-      case _ => throw GameNotFoundException(gameId)
-    }
-
-  def randomizing(user: User) = randomizeRequestRepository.findById(user.id.toString)
-
-  def randomizeRequest(randomizeRequest: RandomizeRequest, newChar: String, count: Int, user: User) =
-    randomizeRequestRepository.findById(user.id.toString) match {
-      case Some(rr) => randomizeRequestRepository.save(rr.copy(characterCounts = rr.characterCounts ++ Map(newChar -> count)))
-      case _ => throw GameNotFoundException(randomizeRequest.gameId)
-    }
-
-  def randomize(randomizeRequest: RandomizeRequest, user: User): Game =
-    gameRepository.findById(randomizeRequest.gameId) match {
       case Some(game) =>
         if (game.gods.exists(_.id == user.id)) {
-          if (randomizeRequest.characterCounts.values.sum > game.individuals.size) throw TooManyArgumentsException(randomizeRequest.gameId)
+          if (characterCounts.values.sum > game.individuals.size) throw TooManyArgumentsException(characterCounts.values.sum, game.individuals.size)
           val users = game.individuals.sortBy(_ => Math.random)
-          val charUsers: Map[User, String] = randomizeRequest.characterCounts.flatMap(pair =>
+          val charUsers: Map[User, String] = characterCounts.flatMap(pair =>
             users.zip(List.fill(pair._2)(pair._1)))
           gameRepository.save(game.copy(people = charUsers))
         } else {
-          throw NotAuthorizedException(randomizeRequest.gameId)
+          throw NotAuthorizedException(gameId)
         }
-      case _ => throw GameNotFoundException(randomizeRequest.gameId)
+      case _ => throw GameNotFoundException(gameId)
     }
 
   def listGames() = gameRepository.findAll

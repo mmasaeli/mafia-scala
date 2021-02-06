@@ -4,7 +4,7 @@ import info.mukel.telegrambot4s.api.declarative.{Callbacks, Commands}
 import info.mukel.telegrambot4s.api.{Polling, TelegramBot}
 import info.mukel.telegrambot4s.methods.EditMessageReplyMarkup
 import info.mukel.telegrambot4s.models._
-import org.masood.mafia.domain.{GameNotFoundException, Session}
+import org.masood.mafia.domain.{GameNotFoundException, Session, TooManyArgumentsException}
 import org.masood.mafia.service.{GameService, SessionService}
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -48,11 +48,11 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     session.status match {
       case "EMPTY" =>
         val id = gameService.newGame.id
-        sessionService.saveSession(session.copy(status = "NEW", metadata = Map("gameId" -> id)))
+        sessionService.saveSession(session.copy(status = "NEW", gameId = id))
         reply(s"A new game has been initialized. ID: '$id'")
       case _ =>
-        reply(s"You are in the middle of game ${session.metadata("gameId")}",
-          replyMarkup = Some(forgetGame(session.metadata("gameId").toString)))
+        reply(s"You are in the middle of game ${session.gameId}",
+          replyMarkup = Some(forgetGame(session.gameId)))
     }
   }
 
@@ -94,6 +94,17 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
            |""".stripMargin,
         replyMarkup = Some(count(msg.from.get.id, "")))
     })
+  }
+
+  onCommand("randomize") { implicit msg =>
+    val session = getSession
+    try {
+      val game = gameService.randomize(session.gameId, session.metadata.map { it => (it._1, it._2.toString.toInt) })
+      session.copy(status = "RANDOMIZED", metadata = Map())
+      reply(game.toString)
+    } catch {
+      case e: TooManyArgumentsException => reply(s"${e.people} are present but ${e.charSum} characters are given.")
+    }
   }
 
   private def count(userId: Int, which: String): InlineKeyboardMarkup = {
