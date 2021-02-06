@@ -15,8 +15,8 @@ import scala.util.Try
  */
 @Component
 class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
-               val gameService: GameService,
-               val sessionService: SessionService)
+               private val gameService: GameService,
+               private val sessionService: SessionService)
   extends TelegramBot
     with Polling
     with Commands

@@ -3,7 +3,6 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'scala'
     id 'idea'
-    id 'java'
 }
 
 group = 'org.masood.telegram'
@@ -41,16 +40,10 @@ sourceSets {
         scala {
             srcDirs = ['src/main/scala']
         }
-        java {
-            srcDirs = ['src/main/java']
-        }
     }
     test {
         scala {
             srcDirs = ['src/test/scala']
-        }
-        java {
-            srcDirs = ['src/test/java']
         }
     }
 }
