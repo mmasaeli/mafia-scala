@@ -23,15 +23,15 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
       case Some(game) =>
         gameRepository.save(
           game.copy(
-            people = game.people.filter(_._1.id == user.id),
+            players = game.players.filter(_._1.id == user.id),
             gods = game.gods.filter(_.id == user.id))
         )
       case _ => throw GameNotFoundException(gameId)
     }
 
-  def joinUser(gameId: String, user: User): Game =
+  def joinUser(gameId: String, user: Player): Game =
     gameRepository.findById(gameId) match {
-      case Some(game) => gameRepository.save(game.copy(people = game.people ++ Map((user, ""))))
+      case Some(game) => gameRepository.save(game.copy(players = game.players ++ Map((user, ""))))
       case _ => throw GameNotFoundException(gameId)
     }
 
@@ -39,11 +39,11 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
     gameRepository.findById(gameId) match {
       case Some(game) =>
         if (game.gods.exists(_.id == user.id)) {
-          if (characterCounts.values.sum > game.people.size) throw TooManyArgumentsException(characterCounts.values.sum, game.people.size)
-          val users = game.people.keys.toList.sortBy(_ => Math.random)
-          val charUsers: Map[User, String] = characterCounts.flatMap(pair =>
+          if (characterCounts.values.sum > game.players.size) throw TooManyArgumentsException(characterCounts.values.sum, game.players.size)
+          val users = game.players.keys.toList.sortBy(_ => Math.random)
+          val charUsers: Map[Player, String] = characterCounts.flatMap(pair =>
             users.zip(List.fill(pair._2)(pair._1)))
-          gameRepository.save(game.copy(people = charUsers))
+          gameRepository.save(game.copy(players = charUsers))
         } else {
           throw NotAuthorizedException(gameId)
         }

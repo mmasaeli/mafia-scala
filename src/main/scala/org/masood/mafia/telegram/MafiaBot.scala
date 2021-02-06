@@ -4,7 +4,7 @@ import info.mukel.telegrambot4s.api.declarative.{Callbacks, Commands}
 import info.mukel.telegrambot4s.api.{Polling, TelegramBot}
 import info.mukel.telegrambot4s.methods.EditMessageReplyMarkup
 import info.mukel.telegrambot4s.models._
-import org.masood.mafia.domain.{GameNotFoundException, Session, TooManyArgumentsException}
+import org.masood.mafia.domain.{GameNotFoundException, Player, Session, TooManyArgumentsException}
 import org.masood.mafia.service.{GameService, SessionService}
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -68,7 +68,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     )
   }
 
-  private def joinGame(gameId: String, user: User)(implicit msg: Message): Future[Message] =
+  private def joinGame(gameId: String, user: Player)(implicit msg: Message): Future[Message] =
     Try(gameService.joinUser(gameId, user)) match {
       case res if res.isSuccess => reply(res.get.toString)
       case x if x.isFailure => x.failed.get match {
@@ -84,7 +84,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       data <- cbq.data
       msg <- cbq.message
     } {
-      joinGame(data, User(msg.chat.id.toInt, firstName = msg.chat.firstName.get, lastName = msg.chat.lastName, username = msg.chat.username, languageCode = None, isBot = false))(msg)
+      joinGame(data, Player(msg.chat))(msg)
     }
   }
 
@@ -94,7 +94,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
         reply(s"Select or enter a game.",
           replyMarkup = Some(chooseGame("JOIN_GAME")))
       } else {
-        joinGame(args.head, msg.from.get)
+        joinGame(args.head, Player(msg.from.get))
       }
     )
   }
