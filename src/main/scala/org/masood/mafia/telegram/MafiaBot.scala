@@ -102,7 +102,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       session.copy(status = "RANDOMIZED", metadata = Map())
       reply(game.toString)
     } catch {
-      case e: TooManyArgumentsException => reply(s"${e.people} are present but ${e.charSum} characters are given.")
+      case e: TooManyArgumentsException => reply(s"${e.people} people are present but ${e.charSum} characters are given.")
     }
   }
 

@@ -12,7 +12,7 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
 
   def newGame(implicit god: User): Game = {
     val random: String = RandomStringUtils.randomNumeric(6)
-    val game = Game(random, List(god), List(), Map(), GameStatus.New)
+    val game = Game(random, List(god), Map(), GameStatus.New)
     gameRepository.save(game)
     logger.info(s"Created new game with ID '$random'.")
     game
@@ -23,7 +23,7 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
       case Some(game) =>
         gameRepository.save(
           game.copy(
-            individuals = game.individuals.filter(_.id == user.id),
+            people = game.people.filter(_._1.id == user.id),
             gods = game.gods.filter(_.id == user.id))
         )
       case _ => throw GameNotFoundException(gameId)
@@ -31,7 +31,7 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
 
   def joinUser(gameId: String, user: User): Game =
     gameRepository.findById(gameId) match {
-      case Some(game) => gameRepository.save(game.copy(individuals = game.individuals ++ List(user)))
+      case Some(game) => gameRepository.save(game.copy(people = game.people ++ Map((user, ""))))
       case _ => throw GameNotFoundException(gameId)
     }
 
@@ -39,8 +39,8 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
     gameRepository.findById(gameId) match {
       case Some(game) =>
         if (game.gods.exists(_.id == user.id)) {
-          if (characterCounts.values.sum > game.individuals.size) throw TooManyArgumentsException(characterCounts.values.sum, game.individuals.size)
-          val users = game.individuals.sortBy(_ => Math.random)
+          if (characterCounts.values.sum > game.people.size) throw TooManyArgumentsException(characterCounts.values.sum, game.people.size)
+          val users = game.people.keys.toList.sortBy(_ => Math.random)
           val charUsers: Map[User, String] = characterCounts.flatMap(pair =>
             users.zip(List.fill(pair._2)(pair._1)))
           gameRepository.save(game.copy(people = charUsers))

@@ -9,7 +9,6 @@ import java.io.{Serializable => JSerializable}
 @RedisHash("Game")
 case class Game(id: String,
                 gods: List[User],
-                individuals: List[User],
                 people: Map[User, String],
                 state: GameStatus
                ) extends JSerializable
