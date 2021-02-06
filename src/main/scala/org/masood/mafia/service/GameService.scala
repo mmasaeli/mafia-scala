@@ -50,5 +50,5 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
       case _ => throw GameNotFoundException(gameId)
     }
 
-  def listGames() = gameRepository.findAll
+  def listGames(): Iterable[Game] = gameRepository.findAll
 }

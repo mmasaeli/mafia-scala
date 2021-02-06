@@ -11,4 +11,20 @@ case class Game(id: String,
                 gods: List[User],
                 people: Map[User, String],
                 state: GameStatus
-               ) extends JSerializable
+               ) extends JSerializable {
+  def summary(): String = s"$id: $state, God(s):{${
+    gods.map {
+      _.firstName
+    }.mkString(", ")
+  }}. ${people.size} players."
+
+  override def toString: String = s"$id: $state, God(s):{${
+    gods.map {
+      _.firstName
+    }.mkString(", ")
+  }}. Players: {${
+    people.map { it =>
+      (it._1.firstName, it._2)
+    }.mkString(", ")
+  }}"
+}

@@ -64,9 +64,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
         Try(gameService.joinUser(args.head, msg.from.get)) match {
           case res if (res.isSuccess) => reply(res.get.toString)
           case x if (x.isFailure) => x.failed.get match {
-            case _: GameNotFoundException => reply(s"'${
-              args.head
-            }' is not a valid game id")
+            case _: GameNotFoundException => reply(s"'${args.head}' is not a valid game id")
             case ex =>
               logger.error("Error in joining user", x)
               reply("Sorry! Could not join the party for some unknown reason.")
@@ -77,9 +75,13 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   }
 
   onCommand("all") { implicit msg =>
-    if (msg.from.get.id == 98257085) {
-      reply(gameService.listGames().toString)
-    } else reply("/help to show all commands")
+    withArgs(args =>
+      if (msg.from.get.id == 98257085) {
+        reply(gameService.listGames().map { game =>
+          if(args.nonEmpty && args.head == "detailed") game.toString else game.summary()
+        }.mkString("\n"))
+      } else reply("/help to show all commands")
+    )
   }
 
 
@@ -148,7 +150,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       msg <- cbq.message
     } {
       gameService.disconnect(data)(msg.from.get)
-      sessionService.saveSession(Session(userId = msg.from.get.id, status = "EMPTY"))
+      sessionService.saveSession(Session(userId = msg.chat.id, status = "EMPTY"))
       reply(s"Forgot game $data.")(msg)
     }
   }
