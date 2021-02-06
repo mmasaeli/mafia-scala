@@ -85,14 +85,13 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   onCommand("cc") { implicit msg =>
     withArgs(args => {
-      sessionService.saveSession(getSession.copy(status = "COUNTING",
-        metadata = Map(("Mafia", 0), ("God father", 0), ("Doctor", 0), ("Armour", 0), ("Sniper", 0))
-          ++ args.map { it => (it, 0) }.toMap))
       reply(
         s"""How many of these characters? Tap on a button to increase
            |Press /randomize or /cancel at the end
            |""".stripMargin,
-        replyMarkup = Some(count(msg.from.get.id, "")))
+        replyMarkup = Some(count(getSession.copy(status = "COUNTING",
+          metadata = Map(("Mafia", 0), ("God father", 0), ("Doctor", 0), ("Armour", 0), ("Sniper", 0))
+            ++ args.map { it => (it, 0) }.toMap), "")))
     })
   }
 
@@ -107,8 +106,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     }
   }
 
-  private def count(userId: Int, which: String): InlineKeyboardMarkup = {
-    val session = sessionService.getSession(userId)
+  private def count(session: Session, which: String): InlineKeyboardMarkup = {
     val newChars = session
       .metadata
       .map { ci => if (ci._1 == which) (ci._1, ci._2.toString.toInt + 1) else ci }
@@ -117,7 +115,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       newChars.map { pair =>
         InlineKeyboardButton.callbackData(
           pair.toString,
-          prefixTag("COUNT_CHARS")(s"$userId,${pair._1}")
+          prefixTag("COUNT_CHARS")(pair._1)
         )
       }.toSeq
     )
@@ -128,12 +126,11 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       data <- cbq.data
       msg <- cbq.message
     } {
-      val parts = data.split(',')
       request(
         EditMessageReplyMarkup(
           Some(ChatId(msg.source)),
           Some(msg.messageId),
-          replyMarkup = Some(count(parts.head.toInt, parts.last)))
+          replyMarkup = Some(count(sessionService.getSession(msg.chat.id), data)))
       )
     }
   }

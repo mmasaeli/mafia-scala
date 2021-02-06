@@ -5,7 +5,7 @@ import org.springframework.data.redis.core.RedisHash
 import java.io.{Serializable => JSerializable}
 
 @RedisHash("Session")
-case class Session(userId: Int,
+case class Session(userId: Long,
                    status: String,
                    gameId: String = null,
                    metadata: Map[String, Any] = Map()
