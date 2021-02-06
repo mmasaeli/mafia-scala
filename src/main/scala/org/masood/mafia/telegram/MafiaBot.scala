@@ -1,13 +1,9 @@
 package org.masood.mafia.telegram
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.scala.{DefaultScalaModule, ScalaObjectMapper}
 import info.mukel.telegrambot4s.api.declarative.{Callbacks, Commands}
 import info.mukel.telegrambot4s.api.{Polling, TelegramBot}
 import info.mukel.telegrambot4s.methods.EditMessageReplyMarkup
 import info.mukel.telegrambot4s.models._
-import org.json4s.DefaultFormats
-import org.json4s.jackson.Json
 import org.masood.mafia.domain.{GameNotFoundException, Session}
 import org.masood.mafia.service.{GameService, SessionService}
 import org.springframework.beans.factory.annotation.Value
@@ -86,30 +82,31 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     } else reply("/help to show all commands")
   }
 
-  private def forgetGame(gameId: String): InlineKeyboardMarkup = {
-    InlineKeyboardMarkup.singleButton(
-      InlineKeyboardButton.callbackData(
-        s"Forget this Game!\n",
-        prefixTag("FORGET_GAME")(gameId)))
-  }
 
   onCommand("cc") { implicit msg =>
-    withArgs(args =>
-      reply(s"numbers",
-        replyMarkup = Some(count(
-          Map(("Mafia", 0), ("God father", 0), ("Doctor", 0), ("Armour", 0))
-            ++ args.map { it => (it, 0) }.toMap, page = 0))
-      )
-    )
+    withArgs(args => {
+      sessionService.saveSession(getSession.copy(status = "COUNTING",
+        metadata = Map(("Mafia", 0), ("God father", 0), ("Doctor", 0), ("Armour", 0), ("Sniper", 0))
+          ++ args.map { it => (it, 0) }.toMap))
+      reply(
+        s"""How many of these characters? Tap on a button to increase
+           |Press /randomize or /cancel at the end
+           |""".stripMargin,
+        replyMarkup = Some(count(msg.from.get.id, "")))
+    })
   }
 
-  private def count(chars: Map[String, Int], page: Int): InlineKeyboardMarkup = {
+  private def count(userId: Int, which: String): InlineKeyboardMarkup = {
+    val session = sessionService.getSession(userId)
+    val newChars = session
+      .metadata
+      .map { ci => if (ci._1 == which) (ci._1, ci._2.toString.toInt + 1) else ci }
+    sessionService.saveSession(session.copy(metadata = newChars))
     InlineKeyboardMarkup.singleColumn(
-      chars.map { char: (String, Int) =>
-        val charToBe: Map[String, Int] = chars ++ Map((char._1, char._2 + 1))
+      newChars.map { pair =>
         InlineKeyboardButton.callbackData(
-          char.toString(),
-          prefixTag("COUNT_CHARS")(Json(DefaultFormats).write(charToBe))
+          pair.toString,
+          prefixTag("COUNT_CHARS")(s"$userId,${pair._1}")
         )
       }.toSeq
     )
@@ -120,16 +117,21 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       data <- cbq.data
       msg <- cbq.message
     } {
-      val mapper = new ObjectMapper() with ScalaObjectMapper
-      mapper.registerModule(DefaultScalaModule)
-      val (chars, page) = mapper.readValue[(Map[String, Int], Int)](data)
+      val parts = data.split(',')
       request(
         EditMessageReplyMarkup(
           Some(ChatId(msg.source)),
           Some(msg.messageId),
-          replyMarkup = Some(count(chars, page)))
+          replyMarkup = Some(count(parts.head.toInt, parts.last)))
       )
     }
+  }
+
+  private def forgetGame(gameId: String): InlineKeyboardMarkup = {
+    InlineKeyboardMarkup.singleButton(
+      InlineKeyboardButton.callbackData(
+        s"Forget this Game!\n",
+        prefixTag("FORGET_GAME")(gameId)))
   }
 
   onCallbackWithTag("FORGET_GAME") { implicit cbq =>
@@ -138,10 +140,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       msg <- cbq.message
     } {
       gameService.disconnect(data)(msg.from.get)
-      val session = getSession(msg)
-      sessionService.saveSession(session.copy(
-        status = "EMPTY",
-        metadata = session.metadata.filter(it => it._1 == "gameId" && it._2 == data)))
+      sessionService.saveSession(Session(userId = msg.from.get.id, status = "EMPTY"))
       reply(s"Forgot game $data.")(msg)
     }
   }
