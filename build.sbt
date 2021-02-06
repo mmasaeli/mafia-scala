@@ -6,14 +6,12 @@ lazy val mafia = (project in file("."))
     name := "Mafia"
   )
 
-//libraryDependencies += "com.bot4s" %% "telegram-core" % "4.4.0-RC2"
 libraryDependencies += "info.mukel" %% "telegrambot4s" % "3.0.14"
 libraryDependencies += "commons-lang" % "commons-lang" % "2.6"
 
-libraryDependencies += "org.springframework.boot" % "spring-boot-starter-web" % "2.4.2"
+libraryDependencies += "org.springframework.boot" % "spring-boot-starter" % "2.4.2"
 libraryDependencies += "org.springframework.boot" % "spring-boot-configuration-processor" % "2.4.2"
-//libraryDependencies += "org.springframework.boot" % "spring-boot-starter-data-redis" % "2.4.2"
 libraryDependencies += "org.springframework.data" % "spring-data-redis" % "2.4.2"
 libraryDependencies += "redis.clients" % "jedis" % "3.5.1"
 
-mainClass in Compile := Some("org.masood.mafia.MyServiceApplication")
+mainClass in Compile := Some("org.masood.mafia.MafiaApplication")
