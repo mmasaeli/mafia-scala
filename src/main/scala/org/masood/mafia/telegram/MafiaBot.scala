@@ -68,7 +68,18 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
         reply(s"A new game has been initialized. ID: '$id'")
       case _ =>
         reply(s"You are in the middle of game ${session.gameId}",
-          replyMarkup = Some(forgetGame(session.gameId)))
+          replyMarkup = Some(disconnectGame(session.gameId)))
+    }
+  }
+
+  onCommand("disconnect") { implicit msg =>
+    val session = getSession
+    session.gameId match {
+      case null =>
+        reply("You are not playing yet.")
+      case _ =>
+        reply(s"You are in the middle of game ${session.gameId}",
+          replyMarkup = Some(disconnectGame(session.gameId)))
     }
   }
 
@@ -171,7 +182,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       if (msg.chat.id == 98257085) {
         reply(gameService.listGames().map { game =>
           if (args.nonEmpty && args.head == "detailed") game.toString else game.summary()
-        }.mkString("\n"))
+        }.mkString("\n______________________________________________________________________\n"))
       } else reply("/help to show all commands")
     )
   }
@@ -250,21 +261,21 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     }
   }
 
-  private def forgetGame(gameId: String): InlineKeyboardMarkup = {
+  private def disconnectGame(gameId: String): InlineKeyboardMarkup = {
     InlineKeyboardMarkup.singleButton(
       InlineKeyboardButton.callbackData(
-        s"Forget this Game!\n",
-        prefixTag("FORGET_GAME")(gameId)))
+        s"Disconnect from this Game!",
+        prefixTag("DISCONNECT_GAME")(gameId)))
   }
 
-  onCallbackWithTag("FORGET_GAME") { implicit cbq =>
+  onCallbackWithTag("DISCONNECT_GAME") { implicit cbq =>
     for {
       data <- cbq.data
       msg <- cbq.message
     } {
       gameService.disconnect(data)(Player(msg.chat))
       sessionService.saveSession(Session(userId = msg.chat.id, status = "EMPTY"))
-      reply(s"Forgot game $data.")(msg)
+      reply(s"Disconnected from game $data.")(msg)
     }
   }
 
