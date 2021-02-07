@@ -23,9 +23,9 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     with Commands
     with Callbacks {
 
-  implicit def toUser(implicit msg: Message): User = msg.from.get
+  implicit def toChat(implicit msg: Message): Chat = msg.chat
 
-  implicit def toPlayer(implicit user: User): Player = Player(user)
+  implicit def toPlayer(implicit chat: Chat): Player = Player(chat)
 
   def getSession(implicit msg: Message): Session = sessionService.getSession
 
@@ -120,7 +120,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
         reply(s"Select or enter a game.",
           replyMarkup = Some(chooseGame("CLAIM_GAME")))
       } else {
-        claimGame(args.head, Player(msg.from.get))
+        claimGame(args.head, Player(msg.chat))
       })
   }
 
@@ -148,14 +148,14 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
         reply(s"Select or enter a game.",
           replyMarkup = Some(chooseGame("JOIN_GAME", List("New"))))
       } else {
-        joinGame(args.head, Player(msg.from.get))
+        joinGame(args.head, Player(msg.chat))
       }
     )
   }
 
   onCommand("all") { implicit msg =>
     withArgs(args =>
-      if (msg.from.get.id == 98257085) {
+      if (msg.chat.id == 98257085) {
         reply(gameService.listGames().map { game =>
           if (args.nonEmpty && args.head == "detailed") game.toString else game.summary()
         }.mkString("\n"))
