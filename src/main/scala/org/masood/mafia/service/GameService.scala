@@ -53,7 +53,7 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
           val users = game.players.keys.toList.sortBy(_ => Math.random)
           val charUsers: Map[Player, String] = characterCounts.flatMap(pair =>
             users.zip(List.fill(pair._2)(pair._1)))
-          gameRepository.save(game.copy(players = charUsers))
+          gameRepository.save(game.copy(players = charUsers, status = GameStatus.Randomized))
         } else {
           throw NotAuthorizedException(gameId)
         }

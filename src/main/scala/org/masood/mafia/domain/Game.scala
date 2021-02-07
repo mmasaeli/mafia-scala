@@ -9,15 +9,15 @@ import java.io.{Serializable => JSerializable}
 case class Game(id: String,
                 gods: List[Player],
                 players: Map[Player, String],
-                state: GameStatus
+                status: GameStatus
                ) extends JSerializable {
-  def summary(): String = s"$id: $state, God(s):[${
+  def summary(): String = s"$id: $status, God(s):[${
     gods.map { god =>
       s"{${god.alias}}"
     }.mkString(", ")
   }]. ${players.size} players."
 
-  override def toString: String = s"$id: $state, God(s):[${
+  override def toString: String = s"$id: $status, God(s):[${
     gods.map { god =>
       s"{${god.alias}}"
     }.mkString(", ")

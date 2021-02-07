@@ -4,6 +4,7 @@ import info.mukel.telegrambot4s.api.declarative.{Callbacks, Commands}
 import info.mukel.telegrambot4s.api.{Polling, TelegramBot}
 import info.mukel.telegrambot4s.methods.{EditMessageReplyMarkup, SendMessage}
 import info.mukel.telegrambot4s.models._
+import org.masood.mafia.domain.GameStatus.GameStatus
 import org.masood.mafia.domain._
 import org.masood.mafia.service.{GameService, SessionService}
 import org.springframework.beans.factory.annotation.Value
@@ -60,9 +61,9 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     }
   }
 
-  private def chooseGame(tag: String, acceptableStatuses: List[String] = List()): ReplyMarkup = InlineKeyboardMarkup.singleColumn(
+  private def chooseGame(tag: String, acceptableStatuses: List[GameStatus] = List()): ReplyMarkup = InlineKeyboardMarkup.singleColumn(
     gameService.listGames()
-      .filterNot(game => acceptableStatuses.contains(game.state))
+      .filterNot(game => acceptableStatuses.contains(game.status))
       .map { game =>
         InlineKeyboardButton.callbackData(
           game.summary(),
@@ -146,7 +147,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     withArgs(args =>
       if (args.size != 1) {
         reply(s"Select or enter a game.",
-          replyMarkup = Some(chooseGame("JOIN_GAME", List("New"))))
+          replyMarkup = Some(chooseGame("JOIN_GAME", List(GameStatus.New))))
       } else {
         joinGame(args.head, Player(msg.chat))
       }
@@ -184,6 +185,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       reply(game.toString)
     } catch {
       case e: TooManyArgumentsException => reply(s"${e.people} people are present but ${e.charSum} characters are given.")
+      case _ => reply(s"Failed to randomize characters.")
     }
   }
 
