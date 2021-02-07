@@ -35,6 +35,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       case "ASSIGN" => reply("ASSIGNING")
       case "JOINED" => reply("JOINED")
       case "NEW" => reply("NEW")
+      case "GOD" => reply("GOD")
       case _ => reply(
         s"""/help, /h: prints this message.
            |/new: starts a new game
@@ -46,6 +47,16 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   onCommand("session") { implicit msg =>
     reply(getSession.toString)
+  }
+
+  onCommand("add") { implicit msg =>
+    withArgs(args =>
+      if (args.size == 1) {
+        gameService.joinUser(getSession.gameId, Player(id = None, args.head))
+      } else {
+        reply("Give me some player name")
+      }
+    )
   }
 
   onCommand("new") { implicit msg =>
@@ -76,16 +87,17 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     Try(gameService.joinUser(gameId, user)) match {
       case res if res.isSuccess =>
         res.get.players.keys
+          .filter(_.id.isDefined)
           .filterNot(_.id == user.id)
           .foreach { player =>
             request(SendMessage(
-              chatId = player.id,
+              chatId = player.id.get,
               s"${user.alias} joined the game!")
             )
           }
         res.get.gods.foreach { god =>
           request(SendMessage(
-            chatId = god.id,
+            chatId = god.id.get,
             s"""${user.alias} joined the game!
                |${res.get.toString}
                |""".stripMargin)
@@ -103,7 +115,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   private def claimGame(gameId: String, user: Player)(implicit msg: Message): Future[Message] =
     Try(gameService.claimGame(gameId, user)) match {
       case res if res.isSuccess =>
-        sessionService.saveSession(sessionService.getSession(user.id)
+        sessionService.saveSession(sessionService.getSession(user.id.get)
           .copy(status = "GOD", gameId = gameId))
         reply(res.get.toString)
       case x if x.isFailure => x.failed.get match {
@@ -183,18 +195,20 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       val charCount = session.metadata.map { it => (it._1, it._2.toString.toInt) }
       val game = gameService.randomize(session.gameId, charCount)
       sessionService.saveSession(session.copy(status = "RANDOMIZED", metadata = Map()))
-      game.players.map { pair =>
-        request(SendMessage(
-          pair._1.id,
-          s"""You are now a '${if (pair._2.isBlank) "Citizen" else pair._2}'.
-             |The structure of the game: $charCount
-             |""".stripMargin
-        ))
-      }
+      game.players
+        .filter(_._1.id.isDefined)
+        .map { pair =>
+          request(SendMessage(
+            pair._1.id.get,
+            s"""You are now a '${if (pair._2.isBlank) "Citizen" else pair._2}'.
+               |The structure of the game: $charCount
+               |""".stripMargin
+          ))
+        }
       reply(game.toString)
     } catch {
       case e: TooManyArgumentsException => reply(s"${e.people} people are present but ${e.charSum} characters are given.")
-      case _ => reply(s"Failed to randomize characters.")
+      case _: Throwable => reply(s"Failed to randomize characters.")
     }
   }
 
@@ -224,6 +238,15 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
           Some(msg.messageId),
           replyMarkup = Some(count(sessionService.getSession(msg.chat.id), data)))
       )
+    }
+  }
+
+  onCallbackWithTag("HELP") { implicit cbq =>
+    for {
+      data <- cbq.data
+      msg <- cbq.message
+    } {
+      reply(s"/$data")(msg)
     }
   }
 

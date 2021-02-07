@@ -50,9 +50,10 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
       case Some(game) =>
         if (game.gods.exists(_.id == user.id)) {
           if (characterCounts.values.sum > game.players.size) throw TooManyArgumentsException(characterCounts.values.sum, game.players.size)
-          val users = game.players.keys.toList.sortBy(_ => Math.random)
-          val charUsers: Map[Player, String] = characterCounts.flatMap(pair =>
-            users.zip(List.fill(pair._2)(pair._1)))
+          val citizens = Map(("Citizen", game.players.size - characterCounts.values.sum))
+          val expanded = (characterCounts ++ citizens).flatMap { pair => List.fill(pair._2)(pair._1) }
+          val players: List[Player] = game.players.keys.toList.sortBy(_ => Math.random)
+          val charUsers: Map[Player, String] = players.zip(expanded).toMap
           gameRepository.save(game.copy(players = charUsers, status = GameStatus.Randomized))
         } else {
           throw NotAuthorizedException(gameId)
