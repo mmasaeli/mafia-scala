@@ -63,7 +63,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   private def chooseGame(tag: String, acceptableStatuses: List[GameStatus] = List()): ReplyMarkup = InlineKeyboardMarkup.singleColumn(
     gameService.listGames()
-      .filterNot(game => acceptableStatuses.contains(game.status))
+      .filter(game => acceptableStatuses.isEmpty || acceptableStatuses.contains(game.status))
       .map { game =>
         InlineKeyboardButton.callbackData(
           game.summary(),
@@ -180,8 +180,17 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   onCommand("randomize") { implicit msg =>
     val session = getSession
     try {
-      val game = gameService.randomize(session.gameId, session.metadata.map { it => (it._1, it._2.toString.toInt) })
-      session.copy(status = "RANDOMIZED", metadata = Map())
+      val charCount = session.metadata.map { it => (it._1, it._2.toString.toInt) }
+      val game = gameService.randomize(session.gameId, charCount)
+      sessionService.saveSession(session.copy(status = "RANDOMIZED", metadata = Map()))
+      game.players.map { pair =>
+        request(SendMessage(
+          pair._1.id,
+          s"""You are now a '${if (pair._2.isBlank) "Citizen" else pair._2}'.
+             |The structure of the game: $charCount
+             |""".stripMargin
+        ))
+      }
       reply(game.toString)
     } catch {
       case e: TooManyArgumentsException => reply(s"${e.people} people are present but ${e.charSum} characters are given.")
