@@ -20,11 +20,13 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
   def disconnect(gameId: String)(implicit user: Player): Game =
     gameRepository.findById(gameId) match {
       case Some(game) =>
-        gameRepository.save(
-          game.copy(
-            players = game.players.filterNot(_._1.id == user.id),
-            gods = game.gods.filterNot(_.id == user.id))
-        )
+        val disconnected = game.copy(
+          players = game.players.filterNot(_._1.id == user.id),
+          gods = game.gods.filterNot(_.id == user.id))
+        if (disconnected.players.isEmpty && disconnected.gods.isEmpty) {
+          gameRepository.delete(gameId)
+          disconnected
+        } else gameRepository.save(disconnected)
       case _ => throw GameNotFoundException(gameId)
     }
 
