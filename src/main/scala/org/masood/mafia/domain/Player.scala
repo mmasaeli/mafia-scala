@@ -4,7 +4,7 @@ import info.mukel.telegrambot4s.models.{Chat, User}
 
 case class Player(val id: Long,
                   val alias: String) {
-  override def toString(): String = alias
+  override def toString: String = alias
 }
 
 object Player {

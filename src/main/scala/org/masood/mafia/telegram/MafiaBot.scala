@@ -2,7 +2,7 @@ package org.masood.mafia.telegram
 
 import info.mukel.telegrambot4s.api.declarative.{Callbacks, Commands}
 import info.mukel.telegrambot4s.api.{Polling, TelegramBot}
-import info.mukel.telegrambot4s.methods.EditMessageReplyMarkup
+import info.mukel.telegrambot4s.methods.{EditMessageReplyMarkup, SendMessage}
 import info.mukel.telegrambot4s.models._
 import org.masood.mafia.domain.{GameNotFoundException, Player, Session, TooManyArgumentsException}
 import org.masood.mafia.service.{GameService, SessionService}
@@ -70,7 +70,24 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   private def joinGame(gameId: String, user: Player)(implicit msg: Message): Future[Message] =
     Try(gameService.joinUser(gameId, user)) match {
-      case res if res.isSuccess => reply(res.get.toString)
+      case res if res.isSuccess =>
+        res.get.players.keys
+          .filterNot(_.id == user.id)
+          .foreach { player =>
+            request(SendMessage(
+              chatId = player.id,
+              s"${user.alias} joined the game!")
+            )
+          }
+        res.get.gods.foreach { god =>
+          request(SendMessage(
+            chatId = god.id,
+            s"""${user.alias} joined the game!
+               |${res.get.toString}
+               |""".stripMargin)
+          )
+        }
+        reply(res.get.toString)
       case x if x.isFailure => x.failed.get match {
         case _: GameNotFoundException => reply(s"'$gameId' is not a valid game id")
         case ex =>
