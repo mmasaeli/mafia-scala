@@ -41,7 +41,7 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
 
   def claimGame(gameId: String, user: Player): Game =
     gameRepository.findById(gameId) match {
-      case Some(game) => if (game.gods.isEmpty) {
+      case Some(game) => if (game.gods.isEmpty || game.gods.exists(_.id == user.id)) {
         gameRepository.save(game.copy(gods = List(user)))
       } else throw NotAuthorizedException(gameId)
       case _ => throw GameNotFoundException(gameId)
