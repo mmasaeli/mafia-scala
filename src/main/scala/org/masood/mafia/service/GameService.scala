@@ -31,7 +31,10 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
 
   def joinUser(gameId: String, user: Player): Game =
     gameRepository.findById(gameId) match {
-      case Some(game) => gameRepository.save(game.copy(players = game.players ++ Map((user, ""))))
+      case Some(game) => gameRepository.save(
+        game.copy(players =
+          game.players
+            ++ Map((user.copy(alias = s"${game.players.size + 1}. ${user.alias}"), ""))))
       case _ => throw GameNotFoundException(gameId)
     }
 
