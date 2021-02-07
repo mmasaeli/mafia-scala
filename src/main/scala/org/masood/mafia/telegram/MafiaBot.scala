@@ -4,7 +4,7 @@ import info.mukel.telegrambot4s.api.declarative.{Callbacks, Commands}
 import info.mukel.telegrambot4s.api.{Polling, TelegramBot}
 import info.mukel.telegrambot4s.methods.{EditMessageReplyMarkup, SendMessage}
 import info.mukel.telegrambot4s.models._
-import org.masood.mafia.domain.{GameNotFoundException, Player, Session, TooManyArgumentsException}
+import org.masood.mafia.domain._
 import org.masood.mafia.service.{GameService, SessionService}
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -22,7 +22,10 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     with Polling
     with Commands
     with Callbacks {
+
   implicit def toUser(implicit msg: Message): User = msg.from.get
+
+  implicit def toPlayer(implicit user: User): Player = Player(user)
 
   def getSession(implicit msg: Message): Session = sessionService.getSession
 
@@ -49,7 +52,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     session.status match {
       case "EMPTY" =>
         val id = gameService.newGame.id
-        sessionService.saveSession(session.copy(status = "New", gameId = id))
+        sessionService.saveSession(session.copy(status = "GOD", gameId = id))
         reply(s"A new game has been initialized. ID: '$id'")
       case _ =>
         reply(s"You are in the middle of game ${session.gameId}",
@@ -57,16 +60,16 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     }
   }
 
-  private def chooseGame(tag: String): ReplyMarkup = {
-    InlineKeyboardMarkup.singleColumn(
-      gameService.listGames().filterNot(_.state == "New").map { game =>
+  private def chooseGame(tag: String, acceptableStatuses: List[String] = List()): ReplyMarkup = InlineKeyboardMarkup.singleColumn(
+    gameService.listGames()
+      .filterNot(game => acceptableStatuses.contains(game.state))
+      .map { game =>
         InlineKeyboardButton.callbackData(
           game.summary(),
           prefixTag(tag)(game.id)
         )
       }.toSeq
-    )
-  }
+  )
 
   private def joinGame(gameId: String, user: Player)(implicit msg: Message): Future[Message] =
     Try(gameService.joinUser(gameId, user)) match {
@@ -96,6 +99,31 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       }
     }
 
+  private def claimGame(gameId: String, user: Player)(implicit msg: Message): Future[Message] =
+    Try(gameService.claimGame(gameId, user)) match {
+      case res if res.isSuccess =>
+        sessionService.saveSession(sessionService.getSession(user.id)
+          .copy(status = "GOD", gameId = gameId))
+        reply(res.get.toString)
+      case x if x.isFailure => x.failed.get match {
+        case _: GameNotFoundException => reply(s"'$gameId' is not a valid game id")
+        case _: NotAuthorizedException => reply(s"'The game already has a god.")
+        case ex =>
+          logger.error("Error in joining user", x)
+          reply("Sorry! Could not do that for some unknown reason.")
+      }
+    }
+
+  onCommand("iAmGod") { implicit msg =>
+    withArgs(args =>
+      if (args.size != 1) {
+        reply(s"Select or enter a game.",
+          replyMarkup = Some(chooseGame("CLAIM_GAME")))
+      } else {
+        claimGame(args.head, Player(msg.from.get))
+      })
+  }
+
   onCallbackWithTag("JOIN_GAME") { implicit cbq =>
     for {
       data <- cbq.data
@@ -105,11 +133,20 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     }
   }
 
+  onCallbackWithTag("CLAIM_GAME") { implicit cbq =>
+    for {
+      data <- cbq.data
+      msg <- cbq.message
+    } {
+      claimGame(data, Player(msg.chat))(msg)
+    }
+  }
+
   onCommand("join") { implicit msg =>
     withArgs(args =>
       if (args.size != 1) {
         reply(s"Select or enter a game.",
-          replyMarkup = Some(chooseGame("JOIN_GAME")))
+          replyMarkup = Some(chooseGame("JOIN_GAME", List("New"))))
       } else {
         joinGame(args.head, Player(msg.from.get))
       }
@@ -191,7 +228,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       data <- cbq.data
       msg <- cbq.message
     } {
-      gameService.disconnect(data)(msg.from.get)
+      gameService.disconnect(data)(Player(msg.chat))
       sessionService.saveSession(Session(userId = msg.chat.id, status = "EMPTY"))
       reply(s"Forgot game $data.")(msg)
     }

@@ -1,7 +1,6 @@
 package org.masood.mafia.service
 
 import com.typesafe.scalalogging.StrictLogging
-import info.mukel.telegrambot4s.models.User
 import org.apache.commons.lang.RandomStringUtils
 import org.masood.mafia.domain._
 import org.masood.mafia.repository.GameRepository
@@ -10,7 +9,7 @@ import org.springframework.stereotype.Service
 @Service
 class GameService(private val gameRepository: GameRepository) extends StrictLogging {
 
-  def newGame(implicit god: User): Game = {
+  def newGame(implicit god: Player): Game = {
     val random: String = RandomStringUtils.randomNumeric(6)
     val game = Game(random, List(god), Map(), GameStatus.New)
     gameRepository.save(game)
@@ -18,13 +17,13 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
     game
   }
 
-  def disconnect(gameId: String)(implicit user: User): Game =
+  def disconnect(gameId: String)(implicit user: Player): Game =
     gameRepository.findById(gameId) match {
       case Some(game) =>
         gameRepository.save(
           game.copy(
-            players = game.players.filter(_._1.id == user.id),
-            gods = game.gods.filter(_.id == user.id))
+            players = game.players.filterNot(_._1.id == user.id),
+            gods = game.gods.filterNot(_.id == user.id))
         )
       case _ => throw GameNotFoundException(gameId)
     }
@@ -38,7 +37,15 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
       case _ => throw GameNotFoundException(gameId)
     }
 
-  def randomize(gameId: String, characterCounts: Map[String, Int])(implicit user: User): Game =
+  def claimGame(gameId: String, user: Player): Game =
+    gameRepository.findById(gameId) match {
+      case Some(game) => if (game.gods.isEmpty) {
+        gameRepository.save(game.copy(gods = List(user)))
+      } else throw NotAuthorizedException(gameId)
+      case _ => throw GameNotFoundException(gameId)
+    }
+
+  def randomize(gameId: String, characterCounts: Map[String, Int])(implicit user: Player): Game =
     gameRepository.findById(gameId) match {
       case Some(game) =>
         if (game.gods.exists(_.id == user.id)) {
