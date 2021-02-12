@@ -40,28 +40,62 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   )
 
   onCommand("help") { implicit msg =>
-    getSession.status match {
-      case "JOINED" => reply(
-        s"""/help: prints this message.
-           |/new: starts a new game.
-           |/join [game_id]: Join to a game.
-           |/add player_name: Add a (fake) player to the game.
-           |/disconnect [game_id]: Disconnect from the current game.
-           |/iAmGod [game_id]: Become god if the game is godless.
-           |""".stripMargin)
-      case "GOD" => reply(
-        s"""/help: prints this message.
-           |/add player_name: Add a (fake) player to the game.
-           |/disconnect [game_id]: Disconnect from the current game.
-           |/cc [extra characters]: Set character counts. (start of randomization)
-           |""".stripMargin)
-      case _ => reply(
-        s"""/help: prints this message.
-           |/new: starts a new game.
-           |/join [game_id]: Join a game.
-           |/iAmGod [game_id]: Become god if the game is godless.
-           |""".stripMargin)
-    }
+    helpCommand(getSession.status)
+  }
+
+  def helpCommand(status: String)(implicit message: Message) = status match {
+    case "JOINED" => reply(
+      s"""/help: prints this message.
+         |/new: starts a new game.
+         |/join [game_id]: Join to a game.
+         |/add player_name: Add a (fake) player to the game.
+         |/disconnect [game_id]: Disconnect from the current game.
+         |/iAmGod [game_id]: Become god if the game is godless.
+         |""".stripMargin)
+    case "GOD" => reply(
+      s"""/help: prints this message.
+         |/add player_name: Add a (fake) player to the game.
+         |/disconnect [game_id]: Disconnect from the current game.
+         |/cc [extra characters]: Set character counts. (start of randomization)
+         |""".stripMargin)
+    case _ => reply(
+      s"""/help: prints this message.
+         |/start: Start an interactive chat
+         |/join [game_id]: Join a game.
+         |/new: starts a new game.
+         |/iAmGod [game_id]: Become god if the game is godless.
+         |""".stripMargin)
+  }
+
+  def newCommand(session: Session)(implicit msg: Message) = session.status match {
+    case "EMPTY" =>
+      val id = gameService.newGame.id
+      sessionService.saveSession(session.copy(status = "GOD", gameId = id))
+      reply(s"A new game has been initialized. ID: '$id'")
+    case _ =>
+      reply(s"You are in the middle of game ${session.gameId}",
+        replyMarkup = Some(disconnectGame(session.gameId)))
+  }
+
+  onCommand("start") { implicit msg =>
+    reply("Choose one of the options below:",
+      replyMarkup = Some(start))
+  }
+
+  private def start: InlineKeyboardMarkup = {
+    InlineKeyboardMarkup.singleColumn(
+      List(
+        InlineKeyboardButton.callbackData(
+          s"Join to a game",
+          prefixTag("COMMAND")("JOIN")),
+        InlineKeyboardButton.callbackData(
+          s"Start a new game",
+          prefixTag("COMMAND")("NEW")),
+        InlineKeyboardButton.callbackData(
+          s"Claim god 😇",
+          prefixTag("COMMAND")("I_AM_GOD")),
+        helpButton
+      ))
   }
 
   onCommand("session") { implicit msg =>
@@ -79,16 +113,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   }
 
   onCommand("new") { implicit msg =>
-    val session = getSession
-    session.status match {
-      case "EMPTY" =>
-        val id = gameService.newGame.id
-        sessionService.saveSession(session.copy(status = "GOD", gameId = id))
-        reply(s"A new game has been initialized. ID: '$id'")
-      case _ =>
-        reply(s"You are in the middle of game ${session.gameId}",
-          replyMarkup = Some(disconnectGame(session.gameId)))
-    }
+    newCommand(getSession)
   }
 
   onCommand("disconnect") { implicit msg =>
@@ -152,11 +177,15 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   onCommand("iAmGod") { implicit msg =>
     withArgs(args =>
       if (args.size != 1) {
-        reply(s"Select or enter a game.",
-          replyMarkup = Some(chooseGame("CLAIM_GAME")))
+        iAmGodCommand
       } else {
         claimGame(args.head, Player(msg.chat))
       })
+  }
+
+  def iAmGodCommand(implicit msg: Message) {
+    reply(s"Select or enter a game.",
+      replyMarkup = Some(chooseGame("CLAIM_GAME")))
   }
 
   onCallbackWithTag("JOIN_GAME") { implicit cbq =>
@@ -180,12 +209,30 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   onCommand("join") { implicit msg =>
     withArgs(args =>
       if (args.size != 1) {
-        reply(s"Select or enter a game.",
-          replyMarkup = Some(chooseGame("JOIN_GAME", List(GameStatus.New))))
+        joinCommand
       } else {
         joinGame(args.head, Player(msg.chat))
       }
     )
+  }
+
+  def joinCommand(implicit msg: Message) =
+    reply(s"Select or enter a game.",
+      replyMarkup = Some(chooseGame("JOIN_GAME", List(GameStatus.New))))
+
+  onCallbackWithTag("COMMAND") { implicit cbq =>
+    for {
+      data <- cbq.data
+      msg <- cbq.message
+    } {
+      val session = getSession(cbq.message.get)
+      data match {
+        case "JOIN" => joinCommand(msg)
+        case "NEW" => newCommand(session)(msg)
+        case "I_AM_GOD" => iAmGodCommand(msg)
+        case _ => helpCommand(session.status)(msg)
+      }
+    }
   }
 
   onCommand("all") { implicit msg =>
@@ -263,8 +310,15 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     }
   }
 
-  private def cancelButton(prevStatus: String) = InlineKeyboardButton.callbackData(
-    "CANCEL", prefixTag("CANCEL")(prevStatus))
+  private def disconnectGame(gameId: String): InlineKeyboardMarkup = {
+    InlineKeyboardMarkup.singleColumn(
+      List(
+        InlineKeyboardButton.callbackData(
+          s"Disconnect from this Game!",
+          prefixTag("DISCONNECT_GAME")(gameId))
+        ,
+        cancelButton("EMPTY")))
+  }
 
   onCallbackWithTag("CANCEL") { implicit cbq =>
     for {
@@ -281,15 +335,11 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     }
   }
 
-  private def disconnectGame(gameId: String): InlineKeyboardMarkup = {
-    InlineKeyboardMarkup.singleColumn(
-      List(
-        InlineKeyboardButton.callbackData(
-          s"Disconnect from this Game!",
-          prefixTag("DISCONNECT_GAME")(gameId))
-        ,
-        cancelButton("EMPTY")))
-  }
+  private def cancelButton(prevStatus: String) = InlineKeyboardButton.callbackData(
+    "CANCEL", prefixTag("CANCEL")(prevStatus))
+
+  private def helpButton = InlineKeyboardButton.callbackData(
+    "HELP", prefixTag("COMMAND")("HELP"))
 
   onCallbackWithTag("DISCONNECT_GAME") { implicit cbq =>
     for {

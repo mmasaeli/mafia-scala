@@ -11,13 +11,13 @@ case class Game(id: String,
                 players: Map[Player, String],
                 status: GameStatus
                ) extends JSerializable {
-  def summary(): String = s"$id: $status, God(s):[${
+  def summary(): String = s"Game: ID('$id'): $status, God(s):[${
     gods.map { god =>
       s"{${god.alias}}"
     }.mkString(", ")
   }]. ${players.size} players."
 
-  override def toString: String = s"$id: $status, God(s):[${
+  override def toString: String = s"Game: ID('$id'): $status, God(s):[${
     gods.map { god =>
       s"{${god.alias}}"
     }.mkString(", ")
