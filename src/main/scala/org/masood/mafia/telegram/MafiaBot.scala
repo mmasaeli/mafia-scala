@@ -251,6 +251,22 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       ))
   }
 
+  private def god: InlineKeyboardMarkup = {
+    InlineKeyboardMarkup.singleColumn(
+      List(
+        InlineKeyboardButton.callbackData(
+          s"Add a (fake) player",
+          prefixTag("COMMAND")("ADD")),
+        InlineKeyboardButton.callbackData(
+          s"Disconnect",
+          prefixTag("COMMAND")("DISCONNECT")),
+        InlineKeyboardButton.callbackData(
+          s"Count Characters and Randomize",
+          prefixTag("COMMAND")("CC")),
+        helpButton
+      ))
+  }
+
   onCommand("randomize") { implicit msg =>
     val session = getSession
     try {
@@ -327,9 +343,6 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
         InlineKeyboardButton.callbackData(
           s"Disconnect",
           prefixTag("COMMAND")("DISCONNECT")),
-        InlineKeyboardButton.callbackData(
-          s"Claim god 😇",
-          prefixTag("COMMAND")("I_AM_GOD")),
         helpButton
       ))
   }
@@ -357,7 +370,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       case res if res.isSuccess =>
         sessionService.saveSession(sessionService.getSession(user.id.get)
           .copy(status = "GOD", gameId = gameId))
-        reply(res.get.toString)
+        reply(res.get.toString, replyMarkup = Some(god))
       case x if x.isFailure => x.failed.get match {
         case _: GameNotFoundException => reply(s"'$gameId' is not a valid game id")
         case _: NotAuthorizedException => reply(s"'The game already has a god.")
