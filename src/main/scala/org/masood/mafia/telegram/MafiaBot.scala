@@ -92,13 +92,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     )
   }
 
-  private def disconnectCommand(session: Session)(implicit msg: Message) = session.gameId match {
-    case null =>
-      reply("You are not playing yet.")
-    case _ =>
-      reply(s"You are in the middle of game ${session.gameId}",
-        replyMarkup = Some(disconnectGame(session.gameId)))
-  }
+  def getSession(implicit msg: Message): Session = sessionService.getSession
 
   onCommand("new") { implicit msg =>
     newCommand(getSession)
@@ -106,6 +100,14 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   onCommand("disconnect") { implicit msg =>
     disconnectCommand(getSession)
+  }
+
+  private def disconnectCommand(session: Session)(implicit msg: Message) = session.gameId match {
+    case null =>
+      reply("You are not playing yet.")
+    case _ =>
+      reply(s"You are in the middle of game ${session.gameId}",
+        replyMarkup = Some(disconnectGame(session.gameId)))
   }
 
   private def disconnectGame(gameId: String): InlineKeyboardMarkup = {
@@ -135,9 +137,6 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
         }.toSeq ++ Seq(cancelButton("GOD"))
     )
 
-  private def cancelButton(prevStatus: String) = InlineKeyboardButton.callbackData(
-    "CANCEL", prefixTag("CANCEL")(prevStatus))
-
   onCommand("iAmGod") { implicit msg =>
     withArgs(args =>
       if (args.size != 1) {
@@ -147,13 +146,8 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       })
   }
 
-  private def ccCommand(args: Seq[String])(implicit msg: Message) = reply(
-    s"""How many of these characters? Tap on a button to increase
-       |Enter /randomize when all set
-       |""".stripMargin,
-    replyMarkup = Some(count(getSession.copy(status = "COUNTING",
-      metadata = Map(("Mafia", 0), ("God father", 0), ("Doctor", 0), ("Armour", 0), ("Sniper", 0))
-        ++ args.map { it => (it, 0) }.toMap), "")))
+  private def cancelButton(prevStatus: String) = InlineKeyboardButton.callbackData(
+    "CANCEL", prefixTag("CANCEL")(prevStatus))
 
   onCallbackWithTag("JOIN_GAME") { implicit cbq =>
     for {
@@ -183,20 +177,13 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     )
   }
 
-  private def count(session: Session, which: String): InlineKeyboardMarkup = {
-    val newChars = session
-      .metadata
-      .map { ci => if (ci._1 == which) (ci._1, ci._2.toString.toInt + 1) else ci }
-    sessionService.saveSession(session.copy(metadata = newChars))
-    InlineKeyboardMarkup.singleColumn(
-      newChars.map { pair =>
-        InlineKeyboardButton.callbackData(
-          pair.toString,
-          prefixTag("COUNT_CHARS")(pair._1)
-        )
-      }.toSeq ++ Seq(cancelButton("GOD"))
-    )
-  }
+  private def ccCommand(args: Seq[String])(implicit msg: Message) = reply(
+    s"""How many of these characters? Tap on a button to increase
+       |Enter /randomize when all set
+       |""".stripMargin,
+    replyMarkup = Some(count(getSession.copy(status = "COUNTING",
+      metadata = Map(("Mafia", 0), ("God father", 0), ("Doctor", 0), ("Armour", 0), ("Sniper", 0))
+        ++ args.map { it => (it, 0) }.toMap), "")))
 
   onCallbackWithTag("COMMAND") { implicit cbq =>
     for {
@@ -231,6 +218,21 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     withArgs(args => {
       ccCommand(args)
     })
+  }
+
+  private def count(session: Session, which: String): InlineKeyboardMarkup = {
+    val newChars = session
+      .metadata
+      .map { ci => if (ci._1 == which) (ci._1, ci._2.toString.toInt + 1) else ci }
+    sessionService.saveSession(session.copy(metadata = newChars))
+    InlineKeyboardMarkup.singleColumn(
+      newChars.map { pair =>
+        InlineKeyboardButton.callbackData(
+          pair.toString,
+          prefixTag("COUNT_CHARS")(pair._1)
+        )
+      }.toSeq ++ Seq(cancelButton("GOD"))
+    )
   }
 
   private def start: InlineKeyboardMarkup = {
@@ -272,23 +274,6 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     }
   }
 
-  private def helpButton = InlineKeyboardButton.callbackData(
-    "HELP", prefixTag("COMMAND")("HELP"))
-
-  onCallbackWithTag("COUNT_CHARS") { implicit cbq =>
-    for {
-      data <- cbq.data
-      msg <- cbq.message
-    } {
-      request(
-        EditMessageReplyMarkup(
-          Some(ChatId(msg.source)),
-          Some(msg.messageId),
-          replyMarkup = Some(count(sessionService.getSession(msg.chat.id), data)))
-      )
-    }
-  }
-
   private def joinGame(gameId: String, user: Player)(implicit msg: Message): Future[Message] =
     Try(gameService.joinUser(gameId, user)) match {
       case res if res.isSuccess =>
@@ -310,7 +295,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
           )
         }
         sessionService.saveSession(getSession.copy(status = "JOINED", gameId = gameId))
-        reply(res.get.toString)
+        reply(res.get.toString, replyMarkup = Some(joined))
       case x if x.isFailure => x.failed.get match {
         case _: GameNotFoundException => reply(s"'$gameId' is not a valid game id")
         case _ =>
@@ -318,6 +303,36 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
           reply("Sorry! Could not join the party for some unknown reason.")
       }
     }
+
+  onCallbackWithTag("COUNT_CHARS") { implicit cbq =>
+    for {
+      data <- cbq.data
+      msg <- cbq.message
+    } {
+      request(
+        EditMessageReplyMarkup(
+          Some(ChatId(msg.source)),
+          Some(msg.messageId),
+          replyMarkup = Some(count(sessionService.getSession(msg.chat.id), data)))
+      )
+    }
+  }
+
+  private def joined: InlineKeyboardMarkup = {
+    InlineKeyboardMarkup.singleColumn(
+      List(
+        InlineKeyboardButton.callbackData(
+          s"Add a (fake) player",
+          prefixTag("COMMAND")("ADD")),
+        InlineKeyboardButton.callbackData(
+          s"Disconnect",
+          prefixTag("COMMAND")("DISCONNECT")),
+        InlineKeyboardButton.callbackData(
+          s"Claim god 😇",
+          prefixTag("COMMAND")("I_AM_GOD")),
+        helpButton
+      ))
+  }
 
   onCallbackWithTag("CANCEL") { implicit cbq =>
     for {
@@ -334,7 +349,8 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     }
   }
 
-  def getSession(implicit msg: Message): Session = sessionService.getSession
+  private def helpButton = InlineKeyboardButton.callbackData(
+    "HELP", prefixTag("COMMAND")("HELP"))
 
   private def claimGame(gameId: String, user: Player)(implicit msg: Message): Future[Message] =
     Try(gameService.claimGame(gameId, user)) match {
