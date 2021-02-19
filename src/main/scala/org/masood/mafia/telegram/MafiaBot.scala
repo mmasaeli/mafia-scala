@@ -29,6 +29,10 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   implicit def toPlayer(implicit chat: Chat): Player = Player(chat)
 
+  private def namesFromArgs(args: Seq[String]): Seq[String] = args.fold("") {
+    (l, r) => s"$l $r".trim
+  }.split("\\s*,\\s*").filter(!_.isBlank)
+
   def iAmGodCommand(implicit msg: Message) {
     reply(s"Select or enter a game.",
       replyMarkup = Some(chooseGame("CLAIM_GAME")))
@@ -134,12 +138,15 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   private def addCommand(args: Seq[String])(implicit msg: Message): Future[Message] = if (args.nonEmpty) {
     val session = getSession
-    val game = args.map(name =>
+    val names = namesFromArgs(args)
+    val game = names.map(name =>
       gameService.joinUser(session.gameId, Player(id = None, name))
     ).last
+    sessionService.saveSession(session.copy(status = God))
     reply(game.summary(), replyMarkup = Some(options(God)))
   } else {
-    reply("Give me some player name", replyMarkup = Some(options(God)))
+    sessionService.saveSession(getSession.copy(status = Adding))
+    reply("Enter players name (for adding multiple players at once, separate them by comma[,])")
   }
 
   def getSession(implicit msg: Message): Session = sessionService.getSession
@@ -227,7 +234,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
         reply(gameService.listGames().map { game =>
           if (args.nonEmpty && args.head == "detailed") game.toString else game.summary()
         }.mkString("\n______________________________________________________________________\n"))
-      } else reply("/help to show all commands")
+      }
     )
   }
 
@@ -246,10 +253,11 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   private def ccCommand(args: Seq[String])(implicit msg: Message) = reply(
     s"""How many of these characters? Tap on a button to increase
        |Hit RANDOMIZE button when all set
+       |Enter new Characters to add to the list
        |""".stripMargin,
     replyMarkup = Some(count(getSession.copy(status = Counting,
       metadata = Map(("Mafia", 0), ("God father", 0), ("Doctor", 0), ("Armour", 0), ("Sniper", 0))
-        ++ args.map { it => (it, 0) }.toMap), "")))
+        ++ namesFromArgs(args).map { it => (it, 0) }.toMap), "")))
 
   private def count(session: Session, which: String): InlineKeyboardMarkup = {
     val newChars = session
@@ -397,7 +405,17 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     } {
       gameService.disconnect(data)(Player(msg.chat))
       sessionService.saveSession(Session(userId = msg.chat.id, status = New))
-      reply(s"Disconnected from game $data.")(msg)
+      reply(s"Disconnected from game $data.", replyMarkup = Some(options(New)))(msg)
+    }
+  }
+
+  onMessage { implicit msg =>
+    if (msg.text.isDefined && !msg.text.get.startsWith("/")) {
+      getSession.status match {
+        case Adding => addCommand(msg.text.get.split(' '))
+        case Counting => ccCommand(msg.text.get.split(' '))
+        case _ => reply("/help to show all commands")
+      }
     }
   }
 
