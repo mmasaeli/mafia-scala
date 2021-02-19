@@ -18,6 +18,7 @@ import scala.util.Try
  */
 @Component
 class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
+               @Value("${ZEUS_ID:98257085}") val zeusUserId: Long,
                private val gameService: GameService,
                private val sessionService: SessionService)
   extends TelegramBot
@@ -230,7 +231,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   onCommand("all") { implicit msg =>
     withArgs(args =>
-      if (msg.chat.id == 98257085) {
+      if (msg.chat.id == zeusUserId) {
         reply(gameService.listGames().map { game =>
           if (args.nonEmpty && args.head == "detailed") game.toString else game.summary()
         }.mkString("\n______________________________________________________________________\n"))
