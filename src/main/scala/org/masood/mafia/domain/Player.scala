@@ -14,3 +14,17 @@ object Player {
       .getOrElse("") + s"(${chat.username.getOrElse("")})",
   )
 }
+
+object PlayerStatus extends Enumeration {
+  type PlayerStatus = Value
+  val New, Joined, Playing, Adding, Counting, God = Value
+
+  def apply(str: String): Value = str.toUpperCase match {
+    case "PLAYING" => Playing
+    case "GOD" => God
+    case "ADDING" => Adding
+    case "COUNTING" => Counting
+    case "JOINED" => Joined
+    case _ => New
+  }
+}
