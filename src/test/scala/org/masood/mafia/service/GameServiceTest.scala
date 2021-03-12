@@ -116,4 +116,16 @@ class GameServiceTest extends AnyFunSuite with BeforeAndAfterEach {
       ("C", 6),
     )))
   }
+
+  test("should be able to disconnect") {
+    val game = newGame.copy(players = users.zipWithIndex.map(zipped =>
+      (zipped._1.copy(alias = s"${zipped._2}. ${zipped._1.alias}"), "")
+    ).toMap)
+    when(
+      hashOperations.get(ArgumentMatchers.eq("GAME"), ArgumentMatchers.eq(newGame.id))
+    ).thenReturn(game)
+    val actualGame = gameService.disconnect(newGame.id)(users.head)
+    actualGame shouldBe game.copy(players = game.players.filterKeys(_ != game.players.head._1))
+  }
+
 }
