@@ -20,14 +20,14 @@ object GameServiceTest {
     alias = "Zeus"
   )
   val users: List[Player] = List(
-    new Player(id = Some(1L), alias = "Bart Simpson"),
-    new Player(id = Some(3L), alias = "Lisa Simpson"),
-    new Player(id = Some(2L), alias = "Homer Simpson"),
-    new Player(id = Some(2L), alias = "Marge Simpson"),
-    new Player(id = Some(2L), alias = "Maggie Simpson"),
-    new Player(id = Some(2L), alias = "Ned Flanders"),
-    new Player(id = Some(2L), alias = "Nelson"),
-    new Player(id = Some(2L), alias = "Rod and Tod"),
+    new Player(id = Some(10L), alias = "Bart Simpson"),
+    new Player(id = Some(32L), alias = "Lisa Simpson"),
+    new Player(id = Some(43L), alias = "Homer Simpson"),
+    new Player(id = Some(50L), alias = "Marge Simpson"),
+    new Player(id = Some(60L), alias = "Maggie Simpson"),
+    new Player(id = Some(70L), alias = "Ned Flanders"),
+    new Player(id = Some(80L), alias = "Nelson"),
+    new Player(id = Some(90L), alias = "Rod and Tod"),
   )
 }
 
@@ -56,7 +56,7 @@ class GameServiceTest extends AnyFunSuite with BeforeAndAfterEach {
     newGame shouldBe Game(newGame.id, List(god), Map(), New)
   }
 
-  test("users should be able to join first") {
+  test("first users should be able to join") {
     when(
       hashOperations.get(ArgumentMatchers.eq("GAME"), ArgumentMatchers.eq("666666"))
     ).thenReturn(newGame)
@@ -65,6 +65,24 @@ class GameServiceTest extends AnyFunSuite with BeforeAndAfterEach {
     actualGame shouldBe Game(newGame.id,
       List(god),
       Map((users.head.copy(alias = s"1. ${users.head.alias}"), "")),
+      New
+    )
+  }
+
+  test("all users should be able to join") {
+    when(
+      hashOperations.get(ArgumentMatchers.eq("GAME"), ArgumentMatchers.eq(newGame.id))
+    ).thenReturn(newGame.copy(players = users.zipWithIndex.map(zipped =>
+      (zipped._1.copy(alias = s"${zipped._2}. ${zipped._1.alias}"), "")
+    ).toMap))
+    val newPlayer = new Player(id = Some(104L), alias = "Milhouse")
+    val actualGame = gameService.joinUser(newGame.id, newPlayer)
+    actualGame.id should fullyMatch.regex("[0-9]{6}".r)
+    actualGame shouldBe Game(newGame.id,
+      List(god),
+      (users.zipWithIndex.map(zipped => (
+        zipped._1.copy(alias = s"${zipped._2}. ${zipped._1.alias}"), "")
+      ) ++ List((newPlayer.copy(alias = s"${users.size + 1}. ${newPlayer.alias}"), ""))).toMap,
       New
     )
   }
