@@ -1,7 +1,7 @@
 package org.masood.mafia.repository
 
 import org.masood.mafia.domain.Game
-import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.{HashOperations, RedisTemplate}
 import org.springframework.stereotype.Repository
 
 import scala.collection.JavaConverters._
