@@ -35,3 +35,10 @@ out/
 
 ### VS Code ###
 .vscode/
+
+.env*
+!.env.example
+
+target
+project
+.bsp
