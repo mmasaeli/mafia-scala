@@ -31,10 +31,6 @@ dependencies {
     testRuntimeOnly "org.scala-lang.modules:scala-xml_${scalaVersion}:1.2.0"
 }
 
-test {
-    useJUnitPlatform()
-}
-
 sourceSets {
     main {
         scala {
