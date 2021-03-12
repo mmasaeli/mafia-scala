@@ -2,7 +2,7 @@ package org.masood.mafia.service
 
 import org.junit.runner.RunWith
 import org.masood.mafia.domain.GameStatus.{New, Randomized}
-import org.masood.mafia.domain.{Game, Player, TooManyArgumentsException}
+import org.masood.mafia.domain.{Game, NotAuthorizedException, Player, TooManyArgumentsException}
 import org.masood.mafia.repository.GameRepository
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
@@ -126,6 +126,21 @@ class GameServiceTest extends AnyFunSuite with BeforeAndAfterEach {
     ).thenReturn(game)
     val actualGame = gameService.disconnect(newGame.id)(users.head)
     actualGame shouldBe game.copy(players = game.players.filterKeys(_ != game.players.head._1))
+  }
+
+  test("should be able to claim games") {
+    when(
+      hashOperations.get(ArgumentMatchers.eq("GAME"), ArgumentMatchers.eq(newGame.id))
+    ).thenReturn(newGame.copy(gods = List()))
+    val actualGame = gameService.claimGame(newGame.id, users.head)
+    actualGame shouldBe newGame.copy(gods = List(users.head))
+  }
+
+  test("should be able to report NotAuthorizedException on claim games") {
+    when(
+      hashOperations.get(ArgumentMatchers.eq("GAME"), ArgumentMatchers.eq(newGame.id))
+    ).thenReturn(newGame)
+    intercept[NotAuthorizedException](gameService.claimGame(newGame.id, users.head))
   }
 
 }
