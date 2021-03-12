@@ -1,7 +1,7 @@
 package org.masood.mafia.service
 
 import org.junit.runner.RunWith
-import org.masood.mafia.domain.GameStatus.New
+import org.masood.mafia.domain.GameStatus.{New, Randomized}
 import org.masood.mafia.domain.{Game, Player}
 import org.masood.mafia.repository.GameRepository
 import org.mockito.ArgumentMatchers
@@ -56,7 +56,7 @@ class GameServiceTest extends AnyFunSuite with BeforeAndAfterEach {
     newGame shouldBe Game(newGame.id, List(god), Map(), New)
   }
 
-  test("first users should be able to join") {
+  test("first users should be able to join with numbering") {
     when(
       hashOperations.get(ArgumentMatchers.eq("GAME"), ArgumentMatchers.eq("666666"))
     ).thenReturn(newGame)
@@ -69,7 +69,7 @@ class GameServiceTest extends AnyFunSuite with BeforeAndAfterEach {
     )
   }
 
-  test("all users should be able to join") {
+  test("all users should be able to join with numbering") {
     when(
       hashOperations.get(ArgumentMatchers.eq("GAME"), ArgumentMatchers.eq(newGame.id))
     ).thenReturn(newGame.copy(players = users.zipWithIndex.map(zipped =>
@@ -77,7 +77,6 @@ class GameServiceTest extends AnyFunSuite with BeforeAndAfterEach {
     ).toMap))
     val newPlayer = new Player(id = Some(104L), alias = "Milhouse")
     val actualGame = gameService.joinUser(newGame.id, newPlayer)
-    actualGame.id should fullyMatch.regex("[0-9]{6}".r)
     actualGame shouldBe Game(newGame.id,
       List(god),
       (users.zipWithIndex.map(zipped => (
@@ -87,4 +86,21 @@ class GameServiceTest extends AnyFunSuite with BeforeAndAfterEach {
     )
   }
 
+  test("should be able to randomize") {
+    when(
+      hashOperations.get(ArgumentMatchers.eq("GAME"), ArgumentMatchers.eq(newGame.id))
+    ).thenReturn(newGame.copy(players = users.zipWithIndex.map(zipped =>
+      (zipped._1.copy(alias = s"${zipped._2}. ${zipped._1.alias}"), "")
+    ).toMap))
+    val actualGame = gameService.randomize(newGame.id, Map(
+      ("A", 1),
+      ("B", 2),
+      ("C", 1),
+    ))
+    actualGame.status shouldBe Randomized
+    actualGame.players.values.count(_ == "A") shouldBe 1
+    actualGame.players.values.count(_ == "B") shouldBe 2
+    actualGame.players.values.count(_ == "C") shouldBe 1
+    actualGame.players.values.count(_ == "Citizen") shouldBe 4
+  }
 }
