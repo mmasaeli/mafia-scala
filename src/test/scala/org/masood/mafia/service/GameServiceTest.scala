@@ -2,7 +2,7 @@ package org.masood.mafia.service
 
 import org.junit.runner.RunWith
 import org.masood.mafia.domain.GameStatus.{New, Randomized}
-import org.masood.mafia.domain.{Game, Player}
+import org.masood.mafia.domain.{Game, Player, TooManyArgumentsException}
 import org.masood.mafia.repository.GameRepository
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
@@ -102,5 +102,18 @@ class GameServiceTest extends AnyFunSuite with BeforeAndAfterEach {
     actualGame.players.values.count(_ == "B") shouldBe 2
     actualGame.players.values.count(_ == "C") shouldBe 1
     actualGame.players.values.count(_ == "Citizen") shouldBe 4
+  }
+
+  test("should be able to report randomize too many chars error") {
+    when(
+      hashOperations.get(ArgumentMatchers.eq("GAME"), ArgumentMatchers.eq(newGame.id))
+    ).thenReturn(newGame.copy(players = users.zipWithIndex.map(zipped =>
+      (zipped._1.copy(alias = s"${zipped._2}. ${zipped._1.alias}"), "")
+    ).toMap))
+    intercept[TooManyArgumentsException](gameService.randomize(newGame.id, Map(
+      ("A", 1),
+      ("B", 2),
+      ("C", 6),
+    )))
   }
 }
