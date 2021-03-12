@@ -2,7 +2,7 @@ package org.masood.mafia.service
 
 import org.junit.runner.RunWith
 import org.masood.mafia.domain.GameStatus.{New, Randomized}
-import org.masood.mafia.domain.{Game, NotAuthorizedException, Player, TooManyArgumentsException}
+import org.masood.mafia.domain._
 import org.masood.mafia.repository.GameRepository
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
@@ -141,6 +141,16 @@ class GameServiceTest extends AnyFunSuite with BeforeAndAfterEach {
       hashOperations.get(ArgumentMatchers.eq("GAME"), ArgumentMatchers.eq(newGame.id))
     ).thenReturn(newGame)
     intercept[NotAuthorizedException](gameService.claimGame(newGame.id, users.head))
+  }
+
+  test("should be able to report GameNotFoundException") {
+    when(
+      hashOperations.get(ArgumentMatchers.eq("GAME"), any())
+    ).thenReturn(null)
+    intercept[GameNotFoundException](gameService.disconnect("000000"))
+    intercept[GameNotFoundException](gameService.joinUser("000000", users.head))
+    intercept[GameNotFoundException](gameService.randomize("000000", Map()))
+    intercept[GameNotFoundException](gameService.claimGame("000000", users.head))
   }
 
 }
