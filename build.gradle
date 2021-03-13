@@ -8,7 +8,7 @@ plugins {
 group = 'org.masood.telegram'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
-compileScala.targetCompatibility = 1.8
+compileScala.targetCompatibility = 11
 def scalaVersion = '2.12'
 
 repositories {
