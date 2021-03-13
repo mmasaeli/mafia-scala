@@ -35,7 +35,9 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
       case Some(game) => gameRepository.save(
         game.copy(players =
           game.players
-            ++ Map((user.copy(alias = s"${game.players.size + 1}. ${user.alias}"), ""))))
+            ++ Map((user.copy(alias = s"${game.players.size + 1}. ${user.alias}"), ""))
+        )
+      )
       case _ => throw GameNotFoundException(gameId)
     }
 
