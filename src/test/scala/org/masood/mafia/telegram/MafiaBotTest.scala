@@ -7,7 +7,7 @@ import org.masood.mafia.service.{GameService, SessionService}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{mock, reset, verify, when}
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.junit.JUnitRunner
 
 object MafiaBotTest {
@@ -15,7 +15,7 @@ object MafiaBotTest {
 }
 
 @RunWith(classOf[JUnitRunner])
-class MafiaBotTest extends AnyFunSuite with BeforeAndAfterEach {
+class MafiaBotTest extends AnyFunSpec with BeforeAndAfterEach {
 
   import MafiaBotTest._
 
@@ -28,22 +28,27 @@ class MafiaBotTest extends AnyFunSuite with BeforeAndAfterEach {
     reset(sessionService)
   }
 
-  test("should trigger new game on /new") {
-    when(sessionService.getSession(any(classOf[Chat]))).thenReturn(Session(1, PlayerStatus.New))
+  describe("Help") {
+  }
 
-    when(gameService.newGame(any())).thenReturn(Game(
-      "666666",
-      List(eric),
-      Map(),
-      GameStatus.New)
-    )
+  describe("New game") {
+    it("should trigger on /new") {
+      when(sessionService.getSession(any(classOf[Chat]))).thenReturn(Session(1, PlayerStatus.New))
 
-    bot.receiveMessage(Message(
-      messageId = 0, date = 0, chat = Chat(
-        1, ChatType.Private, firstName = Some("Eric Cartman"), username = Some("eric")
-      ), text = Some("/new")
-    ))
-    verify(gameService).newGame(eric)
+      when(gameService.newGame(any())).thenReturn(Game(
+        "666666",
+        List(eric),
+        Map(),
+        GameStatus.New)
+      )
+
+      bot.receiveMessage(Message(
+        messageId = 0, date = 0, chat = Chat(
+          1, ChatType.Private, firstName = Some("Eric Cartman"), username = Some("eric")
+        ), text = Some("/new")
+      ))
+      verify(gameService).newGame(eric)
+    }
   }
 
 }

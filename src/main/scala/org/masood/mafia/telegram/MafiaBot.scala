@@ -1,7 +1,7 @@
 package org.masood.mafia.telegram
 
+import info.mukel.telegrambot4s.api.TelegramBot
 import info.mukel.telegrambot4s.api.declarative.{Callbacks, Commands}
-import info.mukel.telegrambot4s.api.{Polling, TelegramBot}
 import info.mukel.telegrambot4s.methods.{DeleteMessage, EditMessageReplyMarkup, SendMessage}
 import info.mukel.telegrambot4s.models._
 import org.masood.mafia.domain.GameStatus.GameStatus
@@ -22,7 +22,6 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
                private val gameService: GameService,
                private val sessionService: SessionService)
   extends TelegramBot
-    with Polling
     with Commands
     with Callbacks {
 
