@@ -12,4 +12,5 @@ Enjoy!
 
 ## Run
 1. Set an environment variable containing your `TELEGRAM_TOKEN`
-2. run `./gradlew bootRun` (or on Windows machines `gradle.bat bootRun`)
+2. start up a redis server.
+3. run `./gradlew bootRun` (or on Windows machines `gradle.bat bootRun`)
