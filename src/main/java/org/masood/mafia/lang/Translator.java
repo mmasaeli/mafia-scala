@@ -7,6 +7,8 @@ public class Translator {
 
     private Locale locale;
 
+    private Locale defaultLocale = new Locale("en");
+
     public Translator(Locale locale) {
         this.locale = locale;
     }
@@ -27,9 +29,12 @@ public class Translator {
         return locale;
     }
 
+    public void setDefaultLocale(Locale defaultLocale) {
+        this.defaultLocale = defaultLocale;
+    }
 
     public String get(String key) {
         var strings = ResourceBundle.getBundle("i18n/strings", this.locale);
-        return strings.getString(key);
+        return strings.containsKey(key) ? strings.getString(key) : ResourceBundle.getBundle("i18n/strings", this.defaultLocale).getString(key);
     }
 }
