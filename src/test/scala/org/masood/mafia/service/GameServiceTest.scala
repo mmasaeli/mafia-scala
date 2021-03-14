@@ -40,7 +40,7 @@ class GameServiceTest extends AnyFunSuite with BeforeAndAfterEach {
   private val template = mock(classOf[RedisTemplate[String, Game]])
   when(template.opsForHash[String, Game]).thenReturn(hashOperations)
   private val gameRepo = new GameRepository(template)
-  private val gameService = new GameService(gameRepo)
+  private val gameService = new GameService("en", gameRepo)
   private val newGame = gameService.newGame
 
   override def beforeEach: Unit = {
