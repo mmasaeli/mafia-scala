@@ -9,9 +9,9 @@ class SessionRepository(val redisTemplate: RedisTemplate[String, Session]) {
 
   private val hashOperations = redisTemplate.opsForHash[String, Session]
 
-  def save(session: Session) = {
+  def save(session: Session): Unit = {
     hashOperations.put("SESSION", session.userId.toString, session)
   }
 
-  def findById(id: Long) = Option(hashOperations.get("SESSION", id.toString))
+  def findById(id: Long): Option[Session] = Option(hashOperations.get("SESSION", id.toString))
 }

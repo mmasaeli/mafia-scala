@@ -16,7 +16,7 @@ class GameRepository(val redisTemplate: RedisTemplate[String, Game]) {
     game
   }
 
-  def findAll = hashOperations.entries("GAME").values().asScala
+  def findAll: Iterable[Game] = hashOperations.entries("GAME").values().asScala
 
   def findById(id: String): Option[Game] = Option(hashOperations.get("GAME", id))
 
