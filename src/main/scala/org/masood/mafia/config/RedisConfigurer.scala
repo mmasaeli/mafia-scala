@@ -13,19 +13,16 @@ class RedisConfig(@Value("${REDIS_HOST:localhost}") val redisHost: String,
                   @Value("${REDIS_PORT:6379}") val redisPort: Int) {
 
   @Bean
+  def jedisConnectionFactory: JedisConnectionFactory = {
+    val redisStandaloneConfiguration = new RedisStandaloneConfiguration(redisHost, redisPort)
+    new JedisConnectionFactory(redisStandaloneConfiguration)
+  }
+
+  @Bean
   def gameTemplate: RedisTemplate[String, Game] = {
     val redisTemplate = new RedisTemplate[String, Game]
     redisTemplate.setConnectionFactory(jedisConnectionFactory)
     redisTemplate
-  }
-
-  import org.springframework.context.annotation.Bean
-  import org.springframework.data.redis.core.RedisTemplate
-
-  @Bean
-  def jedisConnectionFactory: JedisConnectionFactory = {
-    val redisStandaloneConfiguration = new RedisStandaloneConfiguration(redisHost, redisPort)
-    new JedisConnectionFactory(redisStandaloneConfiguration)
   }
 
   @Bean
