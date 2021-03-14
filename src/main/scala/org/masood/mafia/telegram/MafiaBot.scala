@@ -20,7 +20,7 @@ import scala.util.Try
 @Component
 class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
                @Value("${ZEUS_ID:98257085}") private val zeusUserId: Long,
-               @Value("${locale:en}") private val locale: String,
+               @Value("${LOCALE_LANG_COUNTRY:en}") private val locale: String,
                private val gameService: GameService,
                private val sessionService: SessionService)
   extends TelegramBot
@@ -87,25 +87,25 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   private def helpCommand(status: PlayerStatus)(implicit message: Message) = status match {
     case Joined => reply(
-      s"""/help: prints this message.
-         |/new: starts a new game.
-         |/join [game_id]: ${translator.get("joinGame")}.
-         |/add player_name: Add a (fake) player to the game.
-         |/disconnect [game_id]: Disconnect from the current game.
-         |/iAmGod [game_id]: Become god if the game is godless.
+      s"""/help: ${translator.get("help.helpText")}
+         |/new: ${translator.get("help.new")}
+         |/join [game_id]: ${translator.get("help.joinGame")}
+         |/add player_name: ${translator.get("addPlayer")}.
+         |/disconnect [game_id]: ${translator.get("disconnectFromCurrentGame")}
+         |/iAmGod [game_id]: ${translator.get("help.claimGame")}
          |""".stripMargin)
     case God => reply(
-      s"""/help: prints this message.
-         |/add player_name: Add a (fake) player to the game.
-         |/disconnect [game_id]: Disconnect from the current game.
+      s"""/help: ${translator.get("help.helpText")}
+         |/add player_name: ${translator.get("addPlayer")}.
+         |/disconnect [game_id]: ${translator.get("disconnectFromCurrentGame")}
          |/cc [extra characters]: Set character counts. (start of randomization)
          |""".stripMargin)
     case _ => reply(
-      s"""/help: prints this message.
-         |/start: Start an interactive chat
-         |/join [game_id]: ${translator.get("joinGame")}.
-         |/new: starts a new game.
-         |/iAmGod [game_id]: Become god if the game is godless.
+      s"""/help: ${translator.get("help.helpText")}
+         |/start: ${translator.get("help.start")}
+         |/join [game_id]: ${translator.get("help.joinGame")}
+         |/new: ${translator.get("help.new")}
+         |/iAmGod [game_id]: ${translator.get("help.claimGame")}
          |""".stripMargin)
   }
 
@@ -129,7 +129,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       sessionService.saveSession(session.copy(status = God, gameId = id))
       reply(s"A new game has been initialized. ID: '$id'", replyMarkup = Some(options(God)))
     case _ =>
-      reply(s"You are in the middle of game ${session.gameId}",
+      reply(s"${translator.get("youAreAlreadyPlaying")} ${session.gameId}",
         replyMarkup = Some(disconnectGame(session.gameId)))
   }
 
@@ -158,9 +158,9 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   private def disconnectCommand(session: Session)(implicit msg: Message) = session.gameId match {
     case null =>
-      reply("You are not playing yet.")
+      reply(translator.get("youAreNotPlaying"))
     case _ =>
-      reply(s"You are in the middle of game ${session.gameId}",
+      reply(s"${translator.get("youAreAlreadyPlaying")} ${session.gameId}",
         replyMarkup = Some(disconnectGame(session.gameId)))
   }
 
@@ -177,7 +177,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     InlineKeyboardMarkup.singleColumn(
       List(
         InlineKeyboardButton.callbackData(
-          s"Disconnect from this Game!",
+          translator.get("disconnectFromThis"),
           prefixTag("DISCONNECT_GAME")(gameId))
         ,
         cancelButton("EMPTY")))
@@ -291,10 +291,10 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     case God => InlineKeyboardMarkup.singleColumn(
       List(
         InlineKeyboardButton.callbackData(
-          s"Add a (fake) player",
+          translator.get("addPlayer"),
           prefixTag("COMMAND")("ADD")),
         InlineKeyboardButton.callbackData(
-          s"Disconnect",
+          translator.get("disconnect"),
           prefixTag("COMMAND")("DISCONNECT")),
         InlineKeyboardButton.callbackData(
           s"Count Characters and Randomize",
@@ -304,30 +304,30 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     case Joined => InlineKeyboardMarkup.singleColumn(
       List(
         InlineKeyboardButton.callbackData(
-          s"Add a (fake) player",
+          translator.get("addPlayer"),
           prefixTag("COMMAND")("ADD")),
         InlineKeyboardButton.callbackData(
-          s"Disconnect",
+          translator.get("disconnect"),
           prefixTag("COMMAND")("DISCONNECT")),
         helpButton
       ))
     case _ => InlineKeyboardMarkup.singleColumn(
       List(
         InlineKeyboardButton.callbackData(
-          s"${translator.get("joinGame")}",
+          translator.get("help.joinGame"),
           prefixTag("COMMAND")("JOIN")),
         InlineKeyboardButton.callbackData(
-          s"Start a new game",
+          translator.get("help.new"),
           prefixTag("COMMAND")("NEW")),
         InlineKeyboardButton.callbackData(
-          s"Claim god 😇",
+          translator.get("help.claimGame"),
           prefixTag("COMMAND")("I_AM_GOD")),
         helpButton
       ))
   }
 
   private def helpButton = InlineKeyboardButton.callbackData(
-    "HELP", prefixTag("COMMAND")("HELP"))
+    translator.get("help.help"), prefixTag("COMMAND")("HELP"))
 
   onCallbackWithTag("COUNT_CHARS") { implicit cbq =>
     for {
@@ -410,7 +410,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     } {
       gameService.disconnect(data)(Player(msg.chat))
       sessionService.saveSession(Session(userId = msg.chat.id, status = New))
-      reply(s"Disconnected from game $data.", replyMarkup = Some(options(New)))(msg)
+      reply(s"${translator.get("disconnectedFromGame")} $data.", replyMarkup = Some(options(New)))(msg)
     }
   }
 
