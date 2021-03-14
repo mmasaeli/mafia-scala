@@ -19,11 +19,11 @@ case class Game(id: String,
 
   override def toString: String = s"Game: ID('$id'): $status, God(s):[${
     gods.map { god =>
-      s"{${god.alias}}"
-    }.mkString(", ")
-  }]. Players: [${
+      s"\t- ${god.alias}"
+    }.mkString("\n")
+  }]. Players: [\n${
     players.map { it =>
-      s"{${it._1.alias}${if (it._2 == "") "" else s" -> '${it._2}'"}}"
-    }.mkString(", ")
+      s"\t- ${it._1.alias}${if (it._2 == "") "" else s" -- '${it._2}'"}"
+    }.mkString("\n")
   }]"
 }
