@@ -23,6 +23,11 @@ public class Translator {
         this.locale = locale;
     }
 
+    public Locale getLocale() {
+        return locale;
+    }
+
+
     public String get(String key) {
         var strings = ResourceBundle.getBundle("i18n/strings", this.locale);
         return strings.getString(key);
