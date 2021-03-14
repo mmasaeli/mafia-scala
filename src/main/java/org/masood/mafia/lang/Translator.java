@@ -37,4 +37,12 @@ public class Translator {
         var strings = ResourceBundle.getBundle("i18n/strings", this.locale);
         return strings.containsKey(key) ? strings.getString(key) : ResourceBundle.getBundle("i18n/strings", this.defaultLocale).getString(key);
     }
+
+    public String get(String key, String... subs) {
+        var str = get(key);
+        for (var i = 1; i <= subs.length; i++) {
+            str = str.replaceAll("<" + i + ">", subs[i]);
+        }
+        return str;
+    }
 }
