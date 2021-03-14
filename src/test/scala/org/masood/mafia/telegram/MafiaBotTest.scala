@@ -51,4 +51,75 @@ class MafiaBotTest extends AnyFunSpec with BeforeAndAfterEach {
     }
   }
 
+  describe("Randomize") {
+    it("should be able to perform char count with default characters") {
+
+      when(sessionService.getSession(any(classOf[Chat]))).thenReturn(
+        Session(
+          userId = 1,
+          status = PlayerStatus.God,
+          gameId = "666666")
+      )
+
+      when(sessionService.saveSession(any(classOf[Session]))).thenAnswer {
+        _.getArgument(0)
+      }
+
+      bot.receiveMessage(Message(
+        messageId = 0, date = 0, chat = Chat(
+          1, ChatType.Private, firstName = Some("Eric Cartman"), username = Some("eric")
+        ), text = Some("/cc")
+      ))
+      verify(sessionService).saveSession(
+        Session(
+          userId = 1,
+          status = PlayerStatus.Counting,
+          gameId = "666666",
+          metadata = Map(
+            ("Mafia", 0),
+            ("God father", 0),
+            ("Doctor", 0),
+            ("Armour", 0),
+            ("Sniper", 0)
+          )
+        )
+      )
+    }
+    it("should be able to perform char count with default and extra characters") {
+
+      when(sessionService.getSession(any(classOf[Chat]))).thenReturn(
+        Session(
+          userId = 1,
+          status = PlayerStatus.God,
+          gameId = "666666")
+      )
+
+      when(sessionService.saveSession(any(classOf[Session]))).thenAnswer {
+        _.getArgument(0)
+      }
+
+      bot.receiveMessage(Message(
+        messageId = 0, date = 0, chat = Chat(
+          1, ChatType.Private, firstName = Some("Eric Cartman"), username = Some("eric")
+        ), text = Some("/cc cool char, no cool char")
+      ))
+      verify(sessionService).saveSession(
+        Session(
+          userId = 1,
+          status = PlayerStatus.Counting,
+          gameId = "666666",
+          metadata = Map(
+            ("Mafia", 0),
+            ("God father", 0),
+            ("Doctor", 0),
+            ("Armour", 0),
+            ("Sniper", 0),
+            ("cool char", 0),
+            ("no cool char", 0),
+          )
+        )
+      )
+    }
+  }
+
 }
