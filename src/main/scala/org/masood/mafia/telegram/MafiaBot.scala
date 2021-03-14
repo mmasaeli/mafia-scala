@@ -258,8 +258,8 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   private def ccCommand(args: Seq[String])(implicit msg: Message) = reply(
     translator.get("ccInstructions"),
     replyMarkup = Some(count(getSession.copy(status = Counting,
-      metadata = Map(("Mafia", 0), ("God father", 0), ("Doctor", 0), ("Armour", 0), ("Sniper", 0))
-        ++ namesFromArgs(args).map { it => (it, 0) }.toMap), "")))
+      metadata = (namesFromArgs(Seq(translator.get("defaultChars"))).map { it => (it, 0) }
+        ++ namesFromArgs(args).map { it => (it, 0) }).toMap), "")))
 
   private def count(session: Session, which: String): InlineKeyboardMarkup = {
     val newChars = session
