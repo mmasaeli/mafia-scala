@@ -7,6 +7,7 @@ import info.mukel.telegrambot4s.models._
 import org.masood.mafia.domain.GameStatus.GameStatus
 import org.masood.mafia.domain.PlayerStatus.{PlayerStatus, _}
 import org.masood.mafia.domain._
+import org.masood.mafia.lang.Translator
 import org.masood.mafia.service.{GameService, SessionService}
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -18,13 +19,16 @@ import scala.util.Try
  */
 @Component
 class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
-               @Value("${ZEUS_ID:98257085}") val zeusUserId: Long,
+               @Value("${ZEUS_ID:98257085}") private val zeusUserId: Long,
+               @Value("${locale:en}") private val locale: String,
                private val gameService: GameService,
                private val sessionService: SessionService)
   extends TelegramBot
     with Commands
     with Polling
     with Callbacks {
+
+  private val translator = new Translator(locale)
 
   implicit def toChat(implicit msg: Message): Chat = msg.chat
 
@@ -85,7 +89,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     case Joined => reply(
       s"""/help: prints this message.
          |/new: starts a new game.
-         |/join [game_id]: Join a game.
+         |/join [game_id]: ${translator.get("joinGame")}.
          |/add player_name: Add a (fake) player to the game.
          |/disconnect [game_id]: Disconnect from the current game.
          |/iAmGod [game_id]: Become god if the game is godless.
@@ -99,7 +103,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     case _ => reply(
       s"""/help: prints this message.
          |/start: Start an interactive chat
-         |/join [game_id]: Join a game.
+         |/join [game_id]: ${translator.get("joinGame")}.
          |/new: starts a new game.
          |/iAmGod [game_id]: Become god if the game is godless.
          |""".stripMargin)
@@ -310,7 +314,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     case _ => InlineKeyboardMarkup.singleColumn(
       List(
         InlineKeyboardButton.callbackData(
-          s"Join a game",
+          s"${translator.get("joinGame")}",
           prefixTag("COMMAND")("JOIN")),
         InlineKeyboardButton.callbackData(
           s"Start a new game",

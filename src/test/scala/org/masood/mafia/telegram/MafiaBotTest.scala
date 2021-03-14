@@ -21,7 +21,7 @@ class MafiaBotTest extends AnyFunSpec with BeforeAndAfterEach {
 
   private val gameService = mock(classOf[GameService])
   private val sessionService = mock(classOf[SessionService])
-  private val bot = new MafiaBot("TOKEN", 0L, gameService, sessionService)
+  private val bot = new MafiaBot("TOKEN", 0L, "en", gameService, sessionService)
 
   override def afterEach(): Unit = {
     reset(gameService)
