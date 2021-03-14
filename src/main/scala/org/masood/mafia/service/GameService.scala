@@ -3,11 +3,16 @@ package org.masood.mafia.service
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.commons.lang.RandomStringUtils
 import org.masood.mafia.domain._
+import org.masood.mafia.lang.Translator
 import org.masood.mafia.repository.GameRepository
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
-class GameService(private val gameRepository: GameRepository) extends StrictLogging {
+class GameService(@Value("${LOCALE_LANG_COUNTRY:en}") private val locale: String,
+                   private val gameRepository: GameRepository) extends StrictLogging {
+
+  private val translator = new Translator(locale)
 
   def newGame(implicit god: Player): Game = {
     val random: String = RandomStringUtils.randomNumeric(6)
@@ -54,7 +59,7 @@ class GameService(private val gameRepository: GameRepository) extends StrictLogg
       case Some(game) =>
         if (game.gods.exists(_.id == user.id)) {
           if (characterCounts.values.sum > game.players.size) throw TooManyArgumentsException(characterCounts.values.sum, game.players.size)
-          val citizens = Map(("Citizen", game.players.size - characterCounts.values.sum))
+          val citizens = Map((translator.get("citizen"), game.players.size - characterCounts.values.sum))
           val expanded = (characterCounts ++ citizens)
             .flatMap { pair => List.fill(pair._2)(pair._1) }
           val charUsers: Map[Player, String] = game

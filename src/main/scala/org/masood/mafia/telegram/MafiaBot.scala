@@ -36,7 +36,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   private def namesFromArgs(args: Seq[String]): Seq[String] = args.fold("") {
     (l, r) => s"$l $r".trim
-  }.split("\\s*,\\s*").filter(!_.isBlank)
+  }.split("\\s*[,،\n]\\s*").filter(!_.isBlank)
 
   def iAmGodCommand(implicit msg: Message) {
     reply(translator.get("selectOrEnterGame"),
@@ -70,7 +70,12 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
           request(SendMessage(
             pair._1.id.get,
             s"""${translator.get("youAreNowA")} '${if (pair._2.isBlank) s"${translator.get("citizen")}" else pair._2}'.
-               |${translator.get("structureOfGame")} $charCount
+               |${translator.get("structureOfGame")}
+               ${
+              game.players.values.groupBy{_.distinct}.map { pair =>
+                s"\t- ${pair._2.head}: ${pair._2.size}"
+              }.mkString("\n")
+            }
                |""".stripMargin
           ))
         }
