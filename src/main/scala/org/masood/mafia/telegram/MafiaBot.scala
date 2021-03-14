@@ -36,7 +36,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
 
   private def namesFromArgs(args: Seq[String]): Seq[String] = args.fold("") {
     (l, r) => s"$l $r".trim
-  }.split("\\s*,\\s*").filter(!_.isBlank)
+  }.split("\\s*[,،\n]\\s*").filter(!_.isBlank)
 
   def iAmGodCommand(implicit msg: Message) {
     reply(translator.get("selectOrEnterGame"),
