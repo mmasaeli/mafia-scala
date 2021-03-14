@@ -23,4 +23,4 @@ Enjoy!
 
 1. Build using the command `docker-compose build`
 2. Set an environment variable containing your `TELEGRAM_TOKEN`
-3. run with `docker-compose run`
+3. run with `docker-compose up`
