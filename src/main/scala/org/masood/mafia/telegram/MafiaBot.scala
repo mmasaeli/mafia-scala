@@ -39,7 +39,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   }.split("\\s*,\\s*").filter(!_.isBlank)
 
   def iAmGodCommand(implicit msg: Message) {
-    reply(s"Select or enter a game.",
+    reply(translator.get("selectOrEnterGame"),
       replyMarkup = Some(chooseGame("CLAIM_GAME")))
   }
 
@@ -69,19 +69,19 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
         .map { pair =>
           request(SendMessage(
             pair._1.id.get,
-            s"""You are now a '${if (pair._2.isBlank) "Citizen" else pair._2}'.
-               |The structure of the game: $charCount
+            s"""${translator.get("youAreNowA")} '${if (pair._2.isBlank) s"${translator.get("citizen")}" else pair._2}'.
+               |${translator.get("structureOfGame")} $charCount
                |""".stripMargin
           ))
         }
       reply(game.toString)
     } catch {
       case e: TooManyArgumentsException => reply(s"${e.people} people are present but ${e.charSum} characters are given.")
-      case _: Throwable => reply(s"Failed to randomize characters.")
+      case _: Throwable => reply(translator.get("failedToRandomize"))
     }
 
   onCommand("start") { implicit msg =>
-    reply("Choose one of the options below:",
+    reply(translator.get("chooseAnOption"),
       replyMarkup = Some(options(New)))
   }
 
@@ -98,7 +98,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
       s"""/help: ${translator.get("help.helpText")}
          |/add player_name: ${translator.get("addPlayer")}.
          |/disconnect [game_id]: ${translator.get("disconnectFromCurrentGame")}
-         |/cc [extra characters]: Set character counts. (start of randomization)
+         |/cc [extra characters]: ${translator.get("CCAndRandomize")}
          |""".stripMargin)
     case _ => reply(
       s"""/help: ${translator.get("help.helpText")}
@@ -127,7 +127,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     case New =>
       val id = gameService.newGame.id
       sessionService.saveSession(session.copy(status = God, gameId = id))
-      reply(s"A new game has been initialized. ID: '$id'", replyMarkup = Some(options(God)))
+      reply(s"${translator.get("newGameInit")} ID: '$id'", replyMarkup = Some(options(God)))
     case _ =>
       reply(s"${translator.get("youAreAlreadyPlaying")} ${session.gameId}",
         replyMarkup = Some(disconnectGame(session.gameId)))
@@ -151,7 +151,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
     reply(game.summary(), replyMarkup = Some(options(God)))
   } else {
     sessionService.saveSession(getSession.copy(status = Adding))
-    reply("Enter players name (for adding multiple players at once, separate them by comma[,])")
+    reply(translator.get("addFakePlayerInstructions"))
   }
 
   def getSession(implicit msg: Message): Session = sessionService.getSession
@@ -212,7 +212,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   }
 
   private def cancelButton(prevStatus: String) = InlineKeyboardButton.callbackData(
-    "CANCEL", prefixTag("CANCEL")(prevStatus))
+    translator.get("cancel"), prefixTag("CANCEL")(prevStatus))
 
   onCallbackWithTag("COMMAND") { implicit cbq =>
     for {
@@ -251,15 +251,12 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
   }
 
   private def joinCommand(implicit msg: Message) =
-    reply(s"Select or enter a game.",
+    reply(translator.get("selectOrEnterGame"),
       replyMarkup = Some(chooseGame("JOIN_GAME", List(GameStatus.New)))
     )
 
   private def ccCommand(args: Seq[String])(implicit msg: Message) = reply(
-    s"""How many of these characters? Tap on a button to increase
-       |Hit RANDOMIZE button when all set
-       |Enter new Characters to add to the list
-       |""".stripMargin,
+    translator.get("ccInstructions"),
     replyMarkup = Some(count(getSession.copy(status = Counting,
       metadata = Map(("Mafia", 0), ("God father", 0), ("Doctor", 0), ("Armour", 0), ("Sniper", 0))
         ++ namesFromArgs(args).map { it => (it, 0) }.toMap), "")))
@@ -277,7 +274,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
         )
       }.toSeq ++ Seq(
         InlineKeyboardButton.callbackData(
-          "RANDOMIZE", prefixTag("COMMAND")("RANDOMIZE")),
+          translator.get("randomize"), prefixTag("COMMAND")("RANDOMIZE")),
         cancelButton("GOD")
       )
     )
@@ -297,7 +294,7 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
           translator.get("disconnect"),
           prefixTag("COMMAND")("DISCONNECT")),
         InlineKeyboardButton.callbackData(
-          s"Count Characters and Randomize",
+          translator.get("CCAndRandomize"),
           prefixTag("COMMAND")("CC")),
         helpButton
       ))
