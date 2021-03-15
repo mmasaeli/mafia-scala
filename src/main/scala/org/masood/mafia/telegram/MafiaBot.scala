@@ -72,8 +72,8 @@ class MafiaBot(@Value("${TELEGRAM_TOKEN}") val token: String,
             s"""${translator.get("youAreNowA")} '${if (pair._2.isBlank) s"${translator.get("citizen")}" else pair._2}'.
                |${translator.get("structureOfGame")}
                ${
-              game.players.values.groupBy{_.distinct}.map { pair =>
-                s"\t- ${pair._2.head}: ${pair._2.size}"
+              game.players.values.groupBy(identity).map { pair =>
+                s"\t- ${pair._1}: ${pair._2.size}"
               }.mkString("\n")
             }
                |""".stripMargin
